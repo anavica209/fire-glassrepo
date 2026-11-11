@@ -4,6 +4,32 @@ from zipfile import ZipFile
 import pytest
 from fastapi.testclient import TestClient
 
+from app_constants import (
+    CATEGORY_GENERAL,
+    CATEGORY_LOVE,
+    DEMO_PASSWORD,
+    DEMO_USERNAME,
+    FIELD_ACCESS_TOKEN,
+    FIELD_CARDS,
+    FIELD_CATEGORY,
+    FIELD_CATEGORY_LABEL,
+    FIELD_GRANT_TYPE,
+    FIELD_INTERPRETATION,
+    FIELD_KEYWORDS,
+    FIELD_NAME,
+    FIELD_PASSWORD,
+    FIELD_POSITION,
+    FIELD_QUESTION,
+    FIELD_USERNAME,
+    GRANT_TYPE_PASSWORD,
+    GENERAL_QUESTION,
+    INVALID_CATEGORY,
+    INVALID_PASSWORD,
+    POSITION_PRESENT,
+    SAMPLE_CARDS,
+    SAMPLE_QUESTION,
+)
+from constants import POSITIONS, CATEGORY_TEXT
 from main import app
 
 
@@ -18,13 +44,15 @@ def auth_headers(client):
     response = client.post(
         "/auth/token",
         data={
-            "username": "admin",
-            "password": "admin",
-            "grant_type": "password",
+            FIELD_USERNAME: DEMO_USERNAME,
+            FIELD_PASSWORD: DEMO_PASSWORD,
+            FIELD_GRANT_TYPE: GRANT_TYPE_PASSWORD,
         },
     )
     assert response.status_code == 200
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    return {
+        "Authorization": f"Bearer {response.json()[FIELD_ACCESS_TOKEN]}"
+    }
 
 
 def test_home_redirects_to_login_when_signed_out(client):
@@ -37,7 +65,10 @@ def test_home_redirects_to_login_when_signed_out(client):
 def test_web_login_creates_session(client):
     response = client.post(
         "/auth/login",
-        data={"username": "admin", "password": "admin"},
+        data={
+            FIELD_USERNAME: DEMO_USERNAME,
+            FIELD_PASSWORD: DEMO_PASSWORD,
+        },
         follow_redirects=False,
     )
 
@@ -50,9 +81,9 @@ def test_token_endpoint_rejects_invalid_credentials(client):
     response = client.post(
         "/auth/token",
         data={
-            "username": "admin",
-            "password": "incorrect",
-            "grant_type": "password",
+            FIELD_USERNAME: DEMO_USERNAME,
+            FIELD_PASSWORD: INVALID_PASSWORD,
+            FIELD_GRANT_TYPE: GRANT_TYPE_PASSWORD,
         },
     )
 
@@ -63,7 +94,10 @@ def test_token_endpoint_rejects_invalid_credentials(client):
 def test_reading_requires_authentication(client):
     response = client.post(
         "/api/reading",
-        json={"category": "general", "question": "¿Qué necesito tener en cuenta?"},
+        json={
+            FIELD_CATEGORY: CATEGORY_GENERAL,
+            FIELD_QUESTION: GENERAL_QUESTION,
+        },
     )
 
     assert response.status_code == 401
@@ -75,28 +109,32 @@ def test_reading_returns_three_distinct_cards_and_normalizes_question(
     response = client.post(
         "/api/reading",
         headers=auth_headers,
-        json={"category": "amor", "question": "  ¿Cómo puedo escuchar mejor?  "},
+        json={
+            FIELD_CATEGORY: CATEGORY_LOVE,
+            FIELD_QUESTION: f"  {SAMPLE_QUESTION}  ",
+        },
     )
 
     assert response.status_code == 200
     reading = response.json()
-    assert reading["category"] == "amor"
-    assert reading["category_label"] == "Amor y relaciones"
-    assert reading["question"] == "¿Cómo puedo escuchar mejor?"
-    assert [card["position"] for card in reading["cards"]] == [
-        "Pasado",
-        "Presente",
-        "Lo que viene",
-    ]
-    assert len({card["name"] for card in reading["cards"]}) == 3
-    assert all(card["keywords"] and card["interpretation"] for card in reading["cards"])
+    assert reading[FIELD_CATEGORY] == CATEGORY_LOVE
+    assert reading[FIELD_CATEGORY_LABEL] == CATEGORY_TEXT[CATEGORY_LOVE][0]
+    assert reading[FIELD_QUESTION] == SAMPLE_QUESTION
+    assert [
+        card[FIELD_POSITION] for card in reading[FIELD_CARDS]
+    ] == list(POSITIONS)
+    assert len({card[FIELD_NAME] for card in reading[FIELD_CARDS]}) == 3
+    assert all(
+        card[FIELD_KEYWORDS] and card[FIELD_INTERPRETATION]
+        for card in reading[FIELD_CARDS]
+    )
 
 
 def test_reading_rejects_unknown_category(client, auth_headers):
     response = client.post(
         "/api/reading",
         headers=auth_headers,
-        json={"category": "unknown", "question": ""},
+        json={FIELD_CATEGORY: INVALID_CATEGORY, FIELD_QUESTION: ""},
     )
 
     assert response.status_code == 422
@@ -107,11 +145,14 @@ def test_download_rejects_repeated_cards(client, auth_headers):
         "/api/reading/download",
         headers=auth_headers,
         json={
-            "category": "general",
-            "cards": [
-                {"position": "Pasado", "name": "El Loco"},
-                {"position": "Presente", "name": "El Loco"},
-                {"position": "Lo que viene", "name": "El Mundo"},
+            FIELD_CATEGORY: CATEGORY_GENERAL,
+            FIELD_CARDS: [
+                SAMPLE_CARDS[0],
+                {
+                    FIELD_POSITION: POSITION_PRESENT,
+                    FIELD_NAME: SAMPLE_CARDS[0][FIELD_NAME],
+                },
+                SAMPLE_CARDS[2],
             ],
         },
     )
@@ -124,12 +165,8 @@ def test_download_returns_zip_with_one_svg_per_card(client, auth_headers):
         "/api/reading/download",
         headers=auth_headers,
         json={
-            "category": "general",
-            "cards": [
-                {"position": "Pasado", "name": "El Loco"},
-                {"position": "Presente", "name": "El Mago"},
-                {"position": "Lo que viene", "name": "El Mundo"},
-            ],
+            FIELD_CATEGORY: CATEGORY_GENERAL,
+            FIELD_CARDS: SAMPLE_CARDS,
         },
     )
 
@@ -138,8 +175,7 @@ def test_download_returns_zip_with_one_svg_per_card(client, auth_headers):
     assert 'filename="lectura-fire-glass.zip"' in response.headers["content-disposition"]
     with ZipFile(BytesIO(response.content)) as archive:
         assert archive.namelist() == [
-            "carta-1-pasado.svg",
-            "carta-2-presente.svg",
-            "carta-3-lo-que-viene.svg",
+            f"carta-{index}-{card[FIELD_POSITION].lower().replace(' ', '-')}.svg"
+            for index, card in enumerate(SAMPLE_CARDS, start=1)
         ]
         assert all(archive.read(name).startswith(b"<svg ") for name in archive.namelist())

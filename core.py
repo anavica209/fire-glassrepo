@@ -5,16 +5,34 @@ import sqlite3
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, TypedDict
 from uuid import UUID
 
 import jwt
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi import HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, model_validator
+
+from app_constants import (
+    ADMIN_ROLE,
+    DEMO_EMAIL,
+    FIELD_CATEGORY,
+    FIELD_CARDS,
+    FIELD_EMAIL,
+    FIELD_NAME,
+    FIELD_QUESTION,
+    FIELD_ROLE,
+    FIELD_SECTION,
+    FIELD_SESSION_ID,
+    FIELD_SUBJECT,
+    FIELD_USER,
+)
+from cards import ReadingCard
+from categories import CategoryKey
+from constants import POSITIONS
 
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -45,97 +63,20 @@ if google_client_id and google_client_secret:
         client_kwargs={"scope": "openid email profile"},
     )
 
-MAJOR_ARCANA = [
-    "El Loco",
-    "El Mago",
-    "La Sacerdotisa",
-    "La Emperatriz",
-    "El Emperador",
-    "El Hierofante",
-    "Los Enamorados",
-    "El Carro",
-    "La Fuerza",
-    "El Ermitaño",
-    "La Rueda de la Fortuna",
-    "La Justicia",
-    "El Colgado",
-    "La Muerte",
-    "La Templanza",
-    "El Diablo",
-    "La Torre",
-    "La Estrella",
-    "La Luna",
-    "El Sol",
-    "El Juicio",
-    "El Mundo",
-]
-POSITIONS = ["Pasado", "Presente", "Lo que viene"]
-POSITION_LABELS = {
-    "Pasado": "Lo que te trajo hasta aquí",
-    "Presente": "Lo que está vivo ahora",
-    "Lo que viene": "Una posibilidad en el horizonte",
-}
-CATEGORIES = {
-    "amor": "Amor y relaciones",
-    "trabajo": "Trabajo y finanzas",
-    "crecimiento": "Crecimiento personal",
-    "general": "Lectura general",
-}
-CATEGORY_FOCUS = {
-    "amor": "En tus relaciones, considera cómo expresar lo que necesitas con honestidad y escuchar también los límites de la otra persona.",
-    "trabajo": "En tu trabajo y tus recursos, busca un paso concreto que refleje esta idea y respete tus prioridades.",
-    "crecimiento": "En tu proceso personal, explora esta idea con curiosidad y sin exigirte resolverlo todo hoy.",
-    "general": "En tu día a día, observa dónde aparece esta energía y qué pequeña decisión sí está en tus manos.",
-}
-CARD_MEANINGS = {
-    "El Loco": (["Nuevos comienzos", "Espontaneidad", "Confianza"], "Se abre una posibilidad inesperada. Puedes avanzar con curiosidad, sin necesitar tener todas las respuestas, y cuidar a la vez aquello que es importante para ti."),
-    "El Mago": (["Iniciativa", "Recursos", "Acción"], "Ya cuentas con más herramientas de las que imaginas. Un paso concreto, nacido de tu intención, puede transformar una idea en algo real."),
-    "La Sacerdotisa": (["Intuición", "Silencio", "Sabiduría interior"], "Tal vez la respuesta no llegue haciendo más, sino escuchando mejor. Date espacio para observar lo que sientes antes de decidir."),
-    "La Emperatriz": (["Cuidado", "Abundancia", "Creatividad"], "Algo puede crecer cuando recibe atención paciente. Nutre tus vínculos, tus ideas y también tu propio bienestar."),
-    "El Emperador": (["Límites", "Estructura", "Estabilidad"], "Poner orden puede darte más libertad. Define qué necesitas y construye una base firme desde la que puedas avanzar."),
-    "El Hierofante": (["Aprendizaje", "Valores", "Comunidad"], "Una conversación, una tradición o una persona de confianza puede ofrecerte otra perspectiva. Quédate con lo que se alinea con tus valores."),
-    "Los Enamorados": (["Elección", "Conexión", "Coherencia"], "Una decisión importante pide honestidad contigo y con los demás. Busca el camino que refleje lo que de verdad valoras."),
-    "El Carro": (["Dirección", "Determinación", "Avance"], "Hay energía disponible para moverte hacia adelante. Elige un rumbo y procura que tus distintas prioridades trabajen juntas."),
-    "La Fuerza": (["Valentía", "Paciencia", "Compasión"], "La firmeza no siempre necesita imponerse. La paciencia y un trato amable hacia ti mismo pueden ser tu mayor fortaleza."),
-    "El Ermitaño": (["Pausa", "Reflexión", "Claridad"], "Tomar distancia por un momento puede ayudarte a distinguir tu propia voz. No es necesario apresurar una respuesta que aún está madurando."),
-    "La Rueda de la Fortuna": (["Cambio", "Ciclos", "Oportunidad"], "Las circunstancias cambian y no todo está bajo tu control. Observa qué oportunidad trae este giro y qué sí puedes elegir ahora."),
-    "La Justicia": (["Equilibrio", "Honestidad", "Consecuencias"], "Mira la situación con claridad y considera las necesidades de cada parte. Una decisión coherente puede traer equilibrio, aunque requiera valentía."),
-    "El Colgado": (["Nueva perspectiva", "Pausa", "Soltar"], "Quizá avanzar signifique mirar el asunto de otra manera. Permítete pausar y dejar ir aquello que ya no te ayuda."),
-    "La Muerte": (["Transformación", "Cierre", "Renovación"], "Un ciclo puede estar cambiando de forma. Honrar lo que termina deja espacio para descubrir qué quieres llevar contigo."),
-    "La Templanza": (["Armonía", "Medida", "Integración"], "No hace falta resolverlo todo de golpe. Combinar paciencia con pequeños ajustes puede acercarte a un equilibrio sostenible."),
-    "El Diablo": (["Apegos", "Conciencia", "Elección"], "Observa con curiosidad qué hábito, miedo o expectativa limita tu margen de acción. Reconocerlo puede abrir nuevas opciones."),
-    "La Torre": (["Cambio repentino", "Verdad", "Reconstrucción"], "Una estructura puede estar pidiendo revisión. Aunque el cambio incomode, puedes elegir qué conservar y qué reconstruir de forma más auténtica."),
-    "La Estrella": (["Esperanza", "Inspiración", "Confianza"], "Después de un período intenso, puede volver la sensación de posibilidad. Atiende lo que te devuelve calma y te ayuda a recuperar confianza."),
-    "La Luna": (["Emociones", "Incertidumbre", "Escucha"], "No todo está claro todavía, y eso está bien. Separa los hechos de los temores y date tiempo para comprender lo que sientes."),
-    "El Sol": (["Vitalidad", "Claridad", "Alegría"], "Hay espacio para reconocer lo que sí funciona y disfrutarlo sin culpa. La claridad compartida puede fortalecer tus vínculos y proyectos."),
-    "El Juicio": (["Despertar", "Revisión", "Renovación"], "Una experiencia pasada puede ayudarte a responder de otra manera hoy. Escucha qué cambio te pide tu presente, sin juzgar tu recorrido."),
-    "El Mundo": (["Integración", "Logro", "Nuevo ciclo"], "Algo importante puede estar llegando a una conclusión. Reconoce cuánto has recorrido y permite que ese cierre abra un comienzo distinto."),
-}
-
-
 class ReadingRequest(BaseModel):
-    category: Literal["amor", "trabajo", "crecimiento", "general"]
-    question: str = Field(default="", max_length=500)
-
-
-class ReadingCard(BaseModel):
-    position: Literal["Pasado", "Presente", "Lo que viene"]
-    name: str
-
-    @model_validator(mode="after")
-    def validate_card_name(self):
-        if self.name not in MAJOR_ARCANA:
-            raise ValueError("La lectura contiene una carta no reconocida.")
-        return self
+    category: CategoryKey = Field(alias=FIELD_CATEGORY)
+    question: str = Field(default="", max_length=500, alias=FIELD_QUESTION)
 
 
 class DownloadReadingRequest(BaseModel):
-    category: Literal["amor", "trabajo", "crecimiento", "general"]
-    cards: list[ReadingCard] = Field(min_length=3, max_length=3)
+    category: CategoryKey = Field(alias=FIELD_CATEGORY)
+    cards: list[ReadingCard] = Field(
+        min_length=3, max_length=3, alias=FIELD_CARDS
+    )
 
     @model_validator(mode="after")
     def validate_cards(self):
-        if [card.position for card in self.cards] != POSITIONS:
+        if tuple(card.position for card in self.cards) != POSITIONS:
             raise ValueError("La lectura debe incluir las tres posiciones en orden.")
         if len({card.name for card in self.cards}) != len(self.cards):
             raise ValueError("La lectura no puede repetir cartas.")
@@ -143,8 +84,8 @@ class DownloadReadingRequest(BaseModel):
 
 
 class SectionTrackingRequest(BaseModel):
-    session_id: UUID
-    section: int | None = Field(default=None, ge=1, le=5)
+    session_id: UUID = Field(alias=FIELD_SESSION_ID)
+    section: int | None = Field(default=None, ge=1, le=5, alias=FIELD_SECTION)
 
 
 class ActiveSectionSession(TypedDict):
@@ -228,7 +169,7 @@ def save_section_duration(
 
 
 def signed_in_user(request: Request) -> dict[str, str] | None:
-    user = request.session.get("user")
+    user = request.session.get(FIELD_USER)
     return user if isinstance(user, dict) else None
 
 
@@ -244,7 +185,7 @@ def require_session_user(request: Request) -> dict[str, str]:
 
 def require_admin_session(request: Request) -> dict[str, str]:
     user = require_session_user(request)
-    if user.get("role") != "admin" or user.get("email") != "admin@example.com":
+    if user.get(FIELD_ROLE) != ADMIN_ROLE or user.get(FIELD_EMAIL) != DEMO_EMAIL:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Analytics está disponible solo para el usuario administrador.",
@@ -258,9 +199,9 @@ def create_access_token(user: dict[str, str]) -> str:
     now = datetime.now(timezone.utc)
     return jwt.encode(
         {
-            "sub": user["email"],
-            "email": user["email"],
-            "name": user["name"],
+            FIELD_SUBJECT: user[FIELD_EMAIL],
+            FIELD_EMAIL: user[FIELD_EMAIL],
+            FIELD_NAME: user[FIELD_NAME],
             "iat": now,
             "exp": now + timedelta(minutes=ACCESS_TOKEN_MINUTES),
         },
@@ -279,14 +220,14 @@ async def require_user(
     )
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        email = payload.get("email")
-        name = payload.get("name")
-        subject = payload.get("sub")
+        email = payload.get(FIELD_EMAIL)
+        name = payload.get(FIELD_NAME)
+        subject = payload.get(FIELD_SUBJECT)
         if (
             not all(isinstance(value, str) and value for value in (email, name, subject))
             or subject != email
         ):
             raise unauthorized
-        return {"email": email, "name": name}
+        return {FIELD_EMAIL: email, FIELD_NAME: name}
     except jwt.InvalidTokenError as exc:
         raise unauthorized from exc

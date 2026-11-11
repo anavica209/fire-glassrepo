@@ -6,6 +6,21 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import HTMLResponse
 
+from app_constants import (
+    FIELD_EMAIL,
+    FIELD_ADMIN,
+    FIELD_DURATIONS,
+    FIELD_FORMATTED,
+    FIELD_LABEL,
+    FIELD_NAME,
+    FIELD_ROWS,
+    FIELD_SECONDS,
+    FIELD_SECTION,
+    FIELD_SECTION_TRACKING,
+    FIELD_SESSION_ID,
+    FIELD_USERNAME,
+    FIELD_USER_KEY,
+)
 from core import (
     ANALYTICS_DB_PATH,
     SESSION_SECRET,
@@ -54,13 +69,13 @@ async def analytics_page(
         ]
         rows.append(
             {
-                "username": result["username"],
-                "durations": [
+                FIELD_USERNAME: result[FIELD_USERNAME],
+                FIELD_DURATIONS: [
                     {
-                        "section": section,
-                        "label": label,
-                        "seconds": seconds,
-                        "formatted": f"{int(seconds) // 60} min {int(seconds) % 60} s",
+                        FIELD_SECTION: section,
+                        FIELD_LABEL: label,
+                        FIELD_SECONDS: seconds,
+                        FIELD_FORMATTED: f"{int(seconds) // 60} min {int(seconds) % 60} s",
                     }
                     for section, label, seconds in zip(
                         range(1, 6),
@@ -80,7 +95,7 @@ async def analytics_page(
     return templates.TemplateResponse(
         request=request,
         name="analytics.html",
-        context={"rows": rows, "admin": _admin},
+        context={FIELD_ROWS: rows, FIELD_ADMIN: _admin},
     )
 
 
@@ -90,15 +105,15 @@ async def track_section(
     tracking: SectionTrackingRequest,
     user: Annotated[dict[str, str], Depends(require_session_user)],
 ):
-    request.state.section_tracking = {
-        "user_key": hmac.new(
+    setattr(request.state, FIELD_SECTION_TRACKING, {
+        FIELD_USER_KEY: hmac.new(
             SESSION_SECRET.encode("utf-8"),
-            user["email"].casefold().encode("utf-8"),
+            user[FIELD_EMAIL].casefold().encode("utf-8"),
             "sha256",
         ).hexdigest(),
-        "username": user["name"],
-        "session_id": tracking.session_id,
-        "section": tracking.section,
-    }
+        FIELD_USERNAME: user[FIELD_NAME],
+        FIELD_SESSION_ID: tracking.session_id,
+        FIELD_SECTION: tracking.section,
+    })
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

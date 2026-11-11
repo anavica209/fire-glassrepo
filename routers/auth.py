@@ -6,6 +6,21 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestFormStrict
 
+from app_constants import (
+    ADMIN_ROLE,
+    DEMO_DISPLAY_NAME,
+    DEMO_EMAIL,
+    DEMO_PASSWORD,
+    DEMO_USERNAME,
+    FIELD_EMAIL,
+    FIELD_NAME,
+    FIELD_PASSWORD,
+    FIELD_ROLE,
+    FIELD_ACCESS_TOKEN,
+    FIELD_TOKEN_TYPE,
+    FIELD_USER,
+    FIELD_USERNAME,
+)
 from core import (
     create_access_token,
     google_client_id,
@@ -29,6 +44,10 @@ async def login_page(request: Request):
         context={
             "google_enabled": bool(google_client_id and google_client_secret),
             "error": request.query_params.get("error"),
+            "field_username": FIELD_USERNAME,
+            "field_password": FIELD_PASSWORD,
+            "demo_username": DEMO_USERNAME,
+            "demo_password": DEMO_PASSWORD,
         },
     )
 
@@ -36,19 +55,19 @@ async def login_page(request: Request):
 @router.post("/auth/login")
 async def login(
     request: Request,
-    username: Annotated[str, Form()],
-    password: Annotated[str, Form()],
+    username: Annotated[str, Form(alias=FIELD_USERNAME)],
+    password: Annotated[str, Form(alias=FIELD_PASSWORD)],
 ):
-    valid_username = secrets.compare_digest(username, "admin")
-    valid_password = secrets.compare_digest(password, "admin")
+    valid_username = secrets.compare_digest(username, DEMO_USERNAME)
+    valid_password = secrets.compare_digest(password, DEMO_PASSWORD)
     if not (valid_username and valid_password):
         return RedirectResponse("/login?error=credentials", status_code=303)
 
     request.session.clear()
-    request.session["user"] = {
-        "name": "Admin",
-        "email": "admin@example.com",
-        "role": "admin",
+    request.session[FIELD_USER] = {
+        FIELD_NAME: DEMO_DISPLAY_NAME,
+        FIELD_EMAIL: DEMO_EMAIL,
+        FIELD_ROLE: ADMIN_ROLE,
     }
     return RedirectResponse("/", status_code=303)
 
@@ -57,18 +76,18 @@ async def login(
 async def issue_password_token(
     credentials: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
 ):
-    valid_username = secrets.compare_digest(credentials.username, "admin")
-    valid_password = secrets.compare_digest(credentials.password, "admin")
+    valid_username = secrets.compare_digest(credentials.username, DEMO_USERNAME)
+    valid_password = secrets.compare_digest(credentials.password, DEMO_PASSWORD)
     if not (valid_username and valid_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = {"name": "Admin", "email": "admin@example.com"}
+    user = {FIELD_NAME: DEMO_DISPLAY_NAME, FIELD_EMAIL: DEMO_EMAIL}
     return {
-        "access_token": create_access_token(user),
-        "token_type": "bearer",
+        FIELD_ACCESS_TOKEN: create_access_token(user),
+        FIELD_TOKEN_TYPE: "bearer",
     }
 
 
@@ -77,8 +96,8 @@ async def issue_session_token(
     user: Annotated[dict[str, str], Depends(require_session_user)],
 ):
     return {
-        "access_token": create_access_token(user),
-        "token_type": "bearer",
+        FIELD_ACCESS_TOKEN: create_access_token(user),
+        FIELD_TOKEN_TYPE: "bearer",
     }
 
 
@@ -99,13 +118,13 @@ async def google_callback(request: Request):
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
     token = await oauth.google.authorize_access_token(request)
     userinfo = token.get("userinfo")
-    if not userinfo or not userinfo.get("email"):
+    if not userinfo or not userinfo.get(FIELD_EMAIL):
         raise HTTPException(status_code=400, detail="Google no devolvió un correo verificable.")
 
     request.session.clear()
-    request.session["user"] = {
-        "name": userinfo.get("name") or userinfo["email"],
-        "email": userinfo["email"],
+    request.session[FIELD_USER] = {
+        FIELD_NAME: userinfo.get(FIELD_NAME) or userinfo[FIELD_EMAIL],
+        FIELD_EMAIL: userinfo[FIELD_EMAIL],
     }
     return RedirectResponse("/", status_code=303)
 
@@ -114,3 +133,4 @@ async def google_callback(request: Request):
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+

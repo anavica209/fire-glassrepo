@@ -11,9 +11,11 @@ const readingProgress = document.querySelector("#reading-progress");
 const actionFeedback = document.querySelector("#action-feedback");
 const diaryDialog = document.querySelector("#diary-dialog");
 const diaryList = document.querySelector("#diary-list");
-const diaryKey = `fire-glass-reading-diary:${document.querySelector(".session-layout").dataset.userId}`;
+const sessionLayout = document.querySelector(".session-layout");
+const apiFields = JSON.parse(sessionLayout.dataset.apiFields);
+const diaryKey = `fire-glass-reading-diary:${sessionLayout.dataset.userId}`;
 const reading = {
-  category: "amor",
+  category: sessionLayout.dataset.defaultCategory,
   categoryFocus: "",
   question: "",
   cards: [],
@@ -37,7 +39,10 @@ function trackSection(section) {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sectionTrackingId, section }),
+        body: JSON.stringify({
+          [apiFields.sessionId]: sectionTrackingId,
+          [apiFields.section]: section,
+        }),
         keepalive: true,
       });
       if (!response.ok) {
@@ -62,7 +67,7 @@ async function getAccessToken() {
   }
 
   const result = await response.json();
-  accessToken = result.access_token;
+  accessToken = result[apiFields.accessToken];
   return accessToken;
 }
 
@@ -201,15 +206,18 @@ document.querySelector("#download-reading").addEventListener("click", async (eve
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        category: reading.category,
-        cards: reading.cards.map(({ position, name }) => ({ position, name })),
+        [apiFields.category]: reading.category,
+        [apiFields.cards]: reading.cards.map((card) => ({
+          [apiFields.position]: card.position,
+          [apiFields.name]: card.name,
+        })),
       }),
     });
     if (!response.ok) {
       const result = await response.json();
       throw new Error(
-        typeof result.detail === "string"
-          ? result.detail
+        typeof result[apiFields.detail] === "string"
+          ? result[apiFields.detail]
           : "No se pudo preparar la descarga de la lectura.",
       );
     }
@@ -345,8 +353,8 @@ shuffleButton.addEventListener("click", async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        category: reading.category,
-        question: document.querySelector("#reading-question").value.trim(),
+        [apiFields.category]: reading.category,
+        [apiFields.question]: document.querySelector("#reading-question").value.trim(),
       }),
     });
     if (response.status === 401) {
@@ -358,10 +366,16 @@ shuffleButton.addEventListener("click", async () => {
     }
 
     const result = await response.json();
-    reading.category = result.category;
-    reading.categoryFocus = result.category_focus;
-    reading.question = result.question;
-    reading.cards = result.cards;
+    reading.category = result[apiFields.category];
+    reading.categoryFocus = result[apiFields.categoryFocus];
+    reading.question = result[apiFields.question];
+    reading.cards = result[apiFields.cards].map((card) => ({
+      position: card[apiFields.position],
+      position_label: card[apiFields.positionLabel],
+      name: card[apiFields.name],
+      keywords: card[apiFields.keywords],
+      interpretation: card[apiFields.interpretation],
+    }));
     reading.selected.clear();
     renderChoices();
     document.querySelector("#shuffle-deck").hidden = true;

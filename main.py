@@ -5,6 +5,14 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
+from app_constants import (
+    FIELD_SECTION,
+    FIELD_SECTION_TRACKING,
+    FIELD_SESSION_ID,
+    FIELD_STARTED_AT,
+    FIELD_USER_KEY,
+    FIELD_USERNAME,
+)
 from core import (
     BASE_DIR,
     SESSION_SECRET,
@@ -29,30 +37,30 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 @app.middleware("http")
 async def record_section_time(request: Request, call_next):
     response = await call_next(request)
-    event = getattr(request.state, "section_tracking", None)
+    event = getattr(request.state, FIELD_SECTION_TRACKING, None)
     if event is None or response.status_code >= 400:
         return response
 
-    tracking_key = (event["user_key"], str(event["session_id"]))
+    tracking_key = (event[FIELD_USER_KEY], str(event[FIELD_SESSION_ID]))
     current = active_section_sessions.get(tracking_key)
-    next_section = event["section"]
-    if current is not None and current["section"] != next_section:
-        elapsed = max(0.0, time.monotonic() - current["started_at"])
+    next_section = event[FIELD_SECTION]
+    if current is not None and current[FIELD_SECTION] != next_section:
+        elapsed = max(0.0, time.monotonic() - current[FIELD_STARTED_AT])
         if elapsed > 0:
             save_section_duration(
-                current["user_key"],
-                current["username"],
-                current["section"],
+                current[FIELD_USER_KEY],
+                current[FIELD_USERNAME],
+                current[FIELD_SECTION],
                 elapsed,
             )
         del active_section_sessions[tracking_key]
 
     if next_section is not None and tracking_key not in active_section_sessions:
         active_section_sessions[tracking_key] = {
-            "user_key": event["user_key"],
-            "username": event["username"],
-            "section": next_section,
-            "started_at": time.monotonic(),
+            FIELD_USER_KEY: event[FIELD_USER_KEY],
+            FIELD_USERNAME: event[FIELD_USERNAME],
+            FIELD_SECTION: next_section,
+            FIELD_STARTED_AT: time.monotonic(),
         }
     return response
 

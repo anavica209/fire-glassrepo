@@ -8,15 +8,23 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, Response
 
+from app_constants import (
+    FIELD_CARDS,
+    FIELD_CATEGORY,
+    FIELD_CATEGORY_FOCUS,
+    FIELD_CATEGORY_LABEL,
+    FIELD_INTERPRETATION,
+    FIELD_KEYWORDS,
+    FIELD_NAME,
+    FIELD_POSITION,
+    FIELD_POSITION_LABEL,
+    FIELD_QUESTION,
+)
+from cards import CARDS, MAJOR_ARCANA, ReadingCard
+from categories import CATEGORIES, CategoryKey
+from constants import POSITION_LABELS, POSITIONS
 from core import (
-    CARD_MEANINGS,
-    CATEGORIES,
-    CATEGORY_FOCUS,
     DownloadReadingRequest,
-    MAJOR_ARCANA,
-    POSITIONS,
-    POSITION_LABELS,
-    ReadingCard,
     ReadingRequest,
     require_user,
 )
@@ -49,10 +57,10 @@ def _svg_text(
     )
 
 
-def build_card_image(card: ReadingCard, index: int, category: str) -> str:
-    keywords, interpretation = CARD_MEANINGS[card.name]
+def build_card_image(card: ReadingCard, index: int, category: CategoryKey) -> str:
+    card_content = CARDS[card.name]
     position_label = POSITION_LABELS[card.position]
-    category_focus = CATEGORY_FOCUS[category]
+    category_focus = CATEGORIES[category].focus
     card_name = escape(card.name)
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600" role="img" aria-labelledby="title">
   <title id="title">{escape(card.position)}: {card_name} — Fire glass</title>
@@ -78,9 +86,9 @@ def build_card_image(card: ReadingCard, index: int, category: str) -> str:
   {_svg_text(card.name, 600, 570, 26, 42, 50, "#f0d7ae", text_anchor="middle")}
   <text x="84" y="770" fill="#9db8c6" font-family="Arial,sans-serif" font-size="19" letter-spacing="3">{escape(position_label.upper())}</text>
   <text x="84" y="830" fill="#f0d7ae" font-family="Georgia,serif" font-size="34">Interpretación</text>
-  {_svg_text(interpretation, 84, 894, 62, 27, 40, "#c4cbd0")}
+  {_svg_text(card_content.interpretation, 84, 894, 62, 27, 40, "#c4cbd0")}
   <text x="84" y="1098" fill="#cfbe9f" font-family="Arial,sans-serif" font-size="18" letter-spacing="3">PALABRAS CLAVE</text>
-  {_svg_text(" · ".join(keywords), 84, 1140, 62, 23, 34, "#d5bd98")}
+  {_svg_text(" · ".join(card_content.keywords), 84, 1140, 62, 23, 34, "#d5bd98")}
   <text x="84" y="1230" fill="#cfbe9f" font-family="Arial,sans-serif" font-size="18" letter-spacing="3">PARA TENER EN CUENTA</text>
   {_svg_text(category_focus, 84, 1274, 62, 24, 38, "#d3b98e")}
   <text x="600" y="1510" fill="#7e8d98" font-family="Georgia,serif" font-size="20" font-style="italic" text-anchor="middle">Las cartas muestran tendencias; tú moldeas tu camino.</text>
@@ -93,19 +101,20 @@ async def draw_reading(
     _user: Annotated[dict[str, str], Depends(require_user)],
 ):
     cards = secrets.SystemRandom().sample(MAJOR_ARCANA, k=3)
+    category = CATEGORIES[reading.category]
     return JSONResponse(
         {
-            "category": reading.category,
-            "category_label": CATEGORIES[reading.category],
-            "category_focus": CATEGORY_FOCUS[reading.category],
-            "question": reading.question.strip(),
-            "cards": [
+            FIELD_CATEGORY: reading.category.value,
+            FIELD_CATEGORY_LABEL: category.label,
+            FIELD_CATEGORY_FOCUS: category.focus,
+            FIELD_QUESTION: reading.question.strip(),
+            FIELD_CARDS: [
                 {
-                    "position": position,
-                    "position_label": POSITION_LABELS[position],
-                    "name": card,
-                    "keywords": CARD_MEANINGS[card][0],
-                    "interpretation": CARD_MEANINGS[card][1],
+                    FIELD_POSITION: position,
+                    FIELD_POSITION_LABEL: POSITION_LABELS[position],
+                    FIELD_NAME: card,
+                    FIELD_KEYWORDS: CARDS[card].keywords,
+                    FIELD_INTERPRETATION: CARDS[card].interpretation,
                 }
                 for position, card in zip(POSITIONS, cards, strict=True)
             ]

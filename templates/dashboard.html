@@ -2,12 +2,12 @@
 {% block title %}Tu lectura · Fire glass{% endblock %}
 {% block head %}<script src="{{ url_for('static', path='/app.js') }}" defer></script>{% endblock %}
 {% block content %}
-<main class="app-layout session-layout" data-user-id="{{ user.email }}">
+<main class="app-layout session-layout" data-user-id="{{ user.email }}" data-default-category="{{ default_category }}" data-api-fields="{{ api_fields | tojson | forceescape }}">
   <header class="topbar">
     <a class="wordmark" href="/" aria-label="Fire glass, inicio"><span class="brand-mark">✳</span> fire glass</a>
     <div class="user-menu">
       <button class="diary-open-button" id="open-diary" type="button">Mi diario <span id="diary-count">0</span></button>
-      {% if user.role == "admin" %}<a class="analytics-link" href="/analytics">Analytics</a>{% endif %}
+      {% if user.role == admin_role %}<a class="analytics-link" href="/analytics">Analytics</a>{% endif %}
       <span class="welcome-user">Hola, {{ user.name }}</span>
       <form action="/auth/logout" method="post"><button class="logout-button" type="submit">Salir <span aria-hidden="true">↗</span></button></form>
     </div>
@@ -52,10 +52,10 @@
       <p>Elige lo que más se acerca a lo que estás viviendo.</p>
     </div>
     <div class="category-grid" role="group" aria-label="Elige el tema de tu lectura">
-      <button class="category-option is-selected" type="button" data-category="amor" aria-pressed="true"><span class="category-icon">♡</span><span><strong>Amor y relaciones</strong><small>Vínculos, afecto y conexión</small></span><span class="category-check">✳</span></button>
-      <button class="category-option" type="button" data-category="trabajo" aria-pressed="false"><span class="category-icon">⌁</span><span><strong>Trabajo y finanzas</strong><small>Proyectos, rumbo y recursos</small></span><span class="category-check">✳</span></button>
-      <button class="category-option" type="button" data-category="crecimiento" aria-pressed="false"><span class="category-icon">✧</span><span><strong>Crecimiento personal</strong><small>Autoconocimiento y cambios</small></span><span class="category-check">✳</span></button>
-      <button class="category-option" type="button" data-category="general" aria-pressed="false"><span class="category-icon">☼</span><span><strong>Lectura general</strong><small>Una mirada abierta a tu momento</small></span><span class="category-check">✳</span></button>
+      <button class="category-option is-selected" type="button" data-category="{{ category_ids.love }}" aria-pressed="true"><span class="category-icon">♡</span><span><strong>Amor y relaciones</strong><small>Vínculos, afecto y conexión</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="{{ category_ids.work }}" aria-pressed="false"><span class="category-icon">⌁</span><span><strong>Trabajo y finanzas</strong><small>Proyectos, rumbo y recursos</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="{{ category_ids.growth }}" aria-pressed="false"><span class="category-icon">✧</span><span><strong>Crecimiento personal</strong><small>Autoconocimiento y cambios</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="{{ category_ids.general }}" aria-pressed="false"><span class="category-icon">☼</span><span><strong>Lectura general</strong><small>Una mirada abierta a tu momento</small></span><span class="category-check">✳</span></button>
     </div>
     <label class="question-label" for="reading-question">TU PREGUNTA <span>OPCIONAL</span></label>
     <textarea id="reading-question" maxlength="500" rows="3" placeholder="Escribe aquí tu pregunta o lo que te inquieta en este momento…"></textarea>

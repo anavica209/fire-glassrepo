@@ -9,6 +9,17 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from app_constants import (
+    DEMO_DISPLAY_NAME,
+    DEMO_EMAIL,
+    DEMO_PASSWORD,
+    DEMO_USERNAME,
+    FIELD_PASSWORD,
+    FIELD_SECTION,
+    FIELD_SESSION_ID,
+    FIELD_USERNAME,
+    SAMPLE_ANALYTICS_USERNAME,
+)
 import main
 import routers.analytics as analytics
 from core import active_section_sessions
@@ -27,7 +38,10 @@ def sign_in_as_admin(client):
     "Login as admin and redirect (required for authorized operations)"
     response = client.post(
         "/auth/login",
-        data={"username": "admin", "password": "admin"},
+        data={
+            FIELD_USERNAME: DEMO_USERNAME,
+            FIELD_PASSWORD: DEMO_PASSWORD,
+        },
         follow_redirects=False,
     )
     assert response.status_code == 303
@@ -44,7 +58,7 @@ def test_section_tracking_requires_a_signed_in_user(client):
     "Fail to access the resource if the user is not signed in"
     response = client.post(
         "/api/analytics/section",
-        json={"session_id": str(uuid4()), "section": 1},
+        json={FIELD_SESSION_ID: str(uuid4()), FIELD_SECTION: 1},
     )
 
     assert response.status_code == 401
@@ -81,12 +95,12 @@ def test_flow_step_tracking_persists_duration_when_step_ends(
     # init the timer 
     started = client.post(
         "/api/analytics/section",
-        json={"session_id": session_id, "section": flow_step},
+        json={FIELD_SESSION_ID: session_id, FIELD_SECTION: flow_step},
     )
     # makes the middleware to calculate how much time has passed
     ended = client.post(
         "/api/analytics/section",
-        json={"session_id": session_id, "section": None},
+        json={FIELD_SESSION_ID: session_id, FIELD_SECTION: None},
     )
 
     assert started.status_code == 204
@@ -97,8 +111,8 @@ def test_flow_step_tracking_persists_duration_when_step_ends(
         record.section,
         record.duration_seconds,
     )
-    assert record.user_key != "admin@example.com"
-    assert record.username == "Admin"
+    assert record.user_key != DEMO_EMAIL
+    assert record.username == DEMO_DISPLAY_NAME
     assert record.section == flow_step
     assert record.duration_seconds > 0
 
@@ -121,7 +135,7 @@ def test_analytics_page_shows_aggregated_times_to_admin(
         monkeypatch,
         [
             {
-                "username": "Ana",
+                FIELD_USERNAME: SAMPLE_ANALYTICS_USERNAME,
                 "section_1": 65.6,
                 "section_2": 123.4,
                 "section_3": 180,
@@ -135,7 +149,7 @@ def test_analytics_page_shows_aggregated_times_to_admin(
     response = client.get("/analytics")
 
     assert response.status_code == 200
-    assert "Ana" in response.text
+    assert SAMPLE_ANALYTICS_USERNAME in response.text
     assert re.search(
         rf'<td data-label="Paso {step_number} · {flow_step_label}">\s*'
         rf"<strong>{re.escape(formatted_duration)}</strong>",
