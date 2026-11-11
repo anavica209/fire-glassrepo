@@ -13,18 +13,19 @@
 
   <section class="analytics-content" aria-labelledby="analytics-title">
     <span class="eyebrow"><span class="status-dot"></span> PANEL DE ADMINISTRACIÓN</span>
-    <h1 id="analytics-title">Tiempo por <em>sección.</em></h1>
-    <p class="analytics-description">Duración acumulada que cada usuario mantiene activa cada sección de la lectura. El seguimiento se pausa al cambiar de pestaña o salir.</p>
+    <h1 id="analytics-title">Tiempo por <em>paso.</em></h1>
+    <p class="analytics-description">Duración acumulada que cada usuario pasa en cada paso del flujo de lectura. El seguimiento se pausa al cambiar de pestaña o salir.</p>
     {% if rows %}
     <div class="analytics-table-wrap">
       <table class="analytics-table">
         <thead>
           <tr>
             <th scope="col">Usuario</th>
-            <th scope="col">Sección 1 <span>Bienvenida</span></th>
-            <th scope="col">Sección 2 <span>Enfoque</span></th>
-            <th scope="col">Sección 3 <span>Tirada</span></th>
-            <th scope="col">Sección 4 <span>Interpretación</span></th>
+            <th scope="col">Paso 1 <span>Bienvenida</span></th>
+            <th scope="col">Paso 2 <span>Enfoque</span></th>
+            <th scope="col">Paso 3 <span>El encuentro</span></th>
+            <th scope="col">Paso 4 <span>Tu lectura</span></th>
+            <th scope="col">Paso 5 <span>Integrar</span></th>
           </tr>
         </thead>
         <tbody>
@@ -32,7 +33,7 @@
           <tr>
             <th scope="row">{{ row.username }}</th>
             {% for duration in row.durations %}
-            <td data-label="Sección {{ duration.section }} · {{ duration.label }}">
+            <td data-label="Paso {{ duration.section }} · {{ duration.label }}">
               <strong>{{ duration.formatted }}</strong>
               <small>{{ "%.1f"|format(duration.seconds) }} segundos en total</small>
             </td>

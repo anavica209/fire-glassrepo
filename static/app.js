@@ -237,7 +237,7 @@ document.querySelector("#download-reading").addEventListener("click", async (eve
 });
 
 function showScreen(screenNumber) {
-  const section = screenNumber < 4 ? screenNumber + 1 : null;
+  const section = screenNumber < screens.length ? screenNumber + 1 : null;
   if (section !== activeTrackedSection) {
     activeTrackedSection = section;
     trackSection(section);

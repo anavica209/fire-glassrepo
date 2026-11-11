@@ -144,7 +144,7 @@ class DownloadReadingRequest(BaseModel):
 
 class SectionTrackingRequest(BaseModel):
     session_id: UUID
-    section: int | None = Field(default=None, ge=1, le=4)
+    section: int | None = Field(default=None, ge=1, le=5)
 
 
 class ActiveSectionSession(TypedDict):
@@ -160,18 +160,46 @@ active_section_sessions: dict[tuple[str, str], ActiveSectionSession] = {}
 def initialize_analytics_store() -> None:
     with closing(sqlite3.connect(ANALYTICS_DB_PATH, timeout=5)) as connection:
         with connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS section_time_events (
-                    id INTEGER PRIMARY KEY,
-                    user_key TEXT NOT NULL,
-                    username TEXT NOT NULL,
-                    section INTEGER NOT NULL CHECK (section BETWEEN 1 AND 4),
-                    duration_seconds REAL NOT NULL,
-                    recorded_at TEXT NOT NULL
+            table = connection.execute(
+                "SELECT sql FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'section_time_events'"
+            ).fetchone()
+            if table is None:
+                _create_section_time_events_table(connection, "section_time_events")
+            elif "BETWEEN1AND4" in "".join(table[0].upper().split()):
+                _create_section_time_events_table(
+                    connection, "section_time_events_v5"
                 )
-                """
-            )
+                connection.execute(
+                    """
+                    INSERT INTO section_time_events_v5
+                        (id, user_key, username, section, duration_seconds, recorded_at)
+                    SELECT id, user_key, username, section, duration_seconds, recorded_at
+                    FROM section_time_events
+                    """
+                )
+                connection.execute("DROP TABLE section_time_events")
+                connection.execute(
+                    "ALTER TABLE section_time_events_v5 "
+                    "RENAME TO section_time_events"
+                )
+
+
+def _create_section_time_events_table(
+    connection: sqlite3.Connection, table_name: str
+) -> None:
+    connection.execute(
+        f"""
+        CREATE TABLE {table_name} (
+            id INTEGER PRIMARY KEY,
+            user_key TEXT NOT NULL,
+            username TEXT NOT NULL,
+            section INTEGER NOT NULL CHECK (section BETWEEN 1 AND 5),
+            duration_seconds REAL NOT NULL,
+            recorded_at TEXT NOT NULL
+        )
+        """
+    )
 
 
 def save_section_duration(

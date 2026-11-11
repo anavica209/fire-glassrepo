@@ -19,15 +19,11 @@ from core import (
 router = APIRouter()
 
 
-@router.get("/analytics", response_class=HTMLResponse)
-async def analytics_page(
-    request: Request,
-    _admin: Annotated[dict[str, str], Depends(require_admin_session)],
-):
+def _load_analytics_records():
     initialize_analytics_store()
     with closing(sqlite3.connect(ANALYTICS_DB_PATH, timeout=5)) as connection:
         connection.row_factory = sqlite3.Row
-        results = connection.execute(
+        return connection.execute(
             """
             SELECT
                 user_key,
@@ -35,18 +31,26 @@ async def analytics_page(
                 ROUND(SUM(CASE WHEN section = 1 THEN duration_seconds ELSE 0 END), 1) AS section_1,
                 ROUND(SUM(CASE WHEN section = 2 THEN duration_seconds ELSE 0 END), 1) AS section_2,
                 ROUND(SUM(CASE WHEN section = 3 THEN duration_seconds ELSE 0 END), 1) AS section_3,
-                ROUND(SUM(CASE WHEN section = 4 THEN duration_seconds ELSE 0 END), 1) AS section_4
+                ROUND(SUM(CASE WHEN section = 4 THEN duration_seconds ELSE 0 END), 1) AS section_4,
+                ROUND(SUM(CASE WHEN section = 5 THEN duration_seconds ELSE 0 END), 1) AS section_5
             FROM section_time_events
             GROUP BY user_key
             ORDER BY username COLLATE NOCASE
             """
         ).fetchall()
 
+
+@router.get("/analytics", response_class=HTMLResponse)
+async def analytics_page(
+    request: Request,
+    _admin: Annotated[dict[str, str], Depends(require_admin_session)],
+):
+    results = _load_analytics_records()
     rows = []
     for result in results:
         durations = [
             result[f"section_{section}"] or 0
-            for section in range(1, 5)
+            for section in range(1, 6)
         ]
         rows.append(
             {
@@ -59,8 +63,14 @@ async def analytics_page(
                         "formatted": f"{int(seconds) // 60} min {int(seconds) % 60} s",
                     }
                     for section, label, seconds in zip(
-                        range(1, 5),
-                        ("Bienvenida", "Enfoque", "Tirada", "Interpretación"),
+                        range(1, 6),
+                        (
+                            "Bienvenida",
+                            "Enfoque",
+                            "El encuentro",
+                            "Tu lectura",
+                            "Integrar",
+                        ),
                         durations,
                         strict=True,
                     )
@@ -91,3 +101,4 @@ async def track_section(
         "section": tracking.section,
     }
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
