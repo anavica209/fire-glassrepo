@@ -25,6 +25,15 @@ Using the environment's Python to launch Uvicorn avoids relying on a globally in
 
 Open [http://localhost:8000](http://localhost:8000). Demo credentials: `admin` / `admin`.
 
+## Tests
+
+Install the development dependencies and run the test suite:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest
+```
+
 ## Documentation
 
 Swagger UI: http://localhost:8000/docs
