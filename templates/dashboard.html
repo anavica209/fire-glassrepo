@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Tu lectura · Fire glass{% endblock %}
+{% block head %}<script src="{{ url_for('static', path='/app.js') }}" defer></script>{% endblock %}
+{% block content %}
+<main class="app-layout session-layout" data-user-id="{{ user.email }}">
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="Fire glass, inicio"><span class="brand-mark">✳</span> fire glass</a>
+    <div class="user-menu">
+      <button class="diary-open-button" id="open-diary" type="button">Mi diario <span id="diary-count">0</span></button>
+      {% if user.role == "admin" %}<a class="analytics-link" href="/analytics">Analytics</a>{% endif %}
+      <span class="welcome-user">Hola, {{ user.name }}</span>
+      <form action="/auth/logout" method="post"><button class="logout-button" type="submit">Salir <span aria-hidden="true">↗</span></button></form>
+    </div>
+  </header>
+
+  <dialog class="diary-dialog" id="diary-dialog" aria-labelledby="diary-title">
+    <div class="diary-header">
+      <div>
+        <span class="eyebrow"><span class="status-dot"></span> TU ESPACIO DE REFLEXIÓN</span>
+        <h2 id="diary-title">Diario de <em>lecturas.</em></h2>
+      </div>
+      <button class="diary-close-button" id="close-diary" type="button" aria-label="Cerrar diario">×</button>
+    </div>
+    <p class="diary-privacy">Tus lecturas se guardan en este dispositivo.</p>
+    <div class="diary-list" id="diary-list"></div>
+  </dialog>
+
+  <nav class="stepper" aria-label="Progreso de la lectura">
+    <span class="step-dot is-current" data-step-dot="0">01</span><i></i>
+    <span class="step-dot" data-step-dot="1">02</span><i></i>
+    <span class="step-dot" data-step-dot="2">03</span><i></i>
+    <span class="step-dot" data-step-dot="3">04</span><i></i>
+    <span class="step-dot" data-step-dot="4">05</span>
+  </nav>
+
+  <section class="flow-screen is-active" data-screen="0">
+    <div class="welcome-scene">
+      <div class="welcome-crystal welcome-crystal-one"></div>
+      <div class="welcome-crystal welcome-crystal-two"></div>
+      <span class="eyebrow"><span class="status-dot"></span> UN MOMENTO SOLO PARA TI</span>
+      <h1>Tómate un momento<br />para <em>respirar</em> profundo.</h1>
+      <p>Este es tu espacio de claridad.<br />No hay respuestas correctas, solo las que resuenan contigo.</p>
+      <button class="button button-primary flow-next" type="button" data-go="1">Comenzar mi lectura <span aria-hidden="true">↗</span></button>
+    </div>
+    <p class="screen-whisper">INHALA. EXHALA. ESTÁS AQUÍ.</p>
+  </section>
+
+  <section class="flow-screen" data-screen="1" hidden>
+    <div class="flow-heading">
+      <span class="eyebrow"><span class="status-dot"></span> PASO 02 · TU INTENCIÓN</span>
+      <h1>¿Sobre qué aspecto de tu vida<br />buscas <em>claridad</em> hoy?</h1>
+      <p>Elige lo que más se acerca a lo que estás viviendo.</p>
+    </div>
+    <div class="category-grid" role="group" aria-label="Elige el tema de tu lectura">
+      <button class="category-option is-selected" type="button" data-category="amor" aria-pressed="true"><span class="category-icon">♡</span><span><strong>Amor y relaciones</strong><small>Vínculos, afecto y conexión</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="trabajo" aria-pressed="false"><span class="category-icon">⌁</span><span><strong>Trabajo y finanzas</strong><small>Proyectos, rumbo y recursos</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="crecimiento" aria-pressed="false"><span class="category-icon">✧</span><span><strong>Crecimiento personal</strong><small>Autoconocimiento y cambios</small></span><span class="category-check">✳</span></button>
+      <button class="category-option" type="button" data-category="general" aria-pressed="false"><span class="category-icon">☼</span><span><strong>Lectura general</strong><small>Una mirada abierta a tu momento</small></span><span class="category-check">✳</span></button>
+    </div>
+    <label class="question-label" for="reading-question">TU PREGUNTA <span>OPCIONAL</span></label>
+    <textarea id="reading-question" maxlength="500" rows="3" placeholder="Escribe aquí tu pregunta o lo que te inquieta en este momento…"></textarea>
+    <div class="flow-actions">
+      <button class="text-button flow-back" type="button" data-go="0">← Volver</button>
+      <button class="button button-primary flow-next" type="button" data-go="2">Continuar <span aria-hidden="true">↗</span></button>
+    </div>
+  </section>
+
+  <section class="flow-screen" data-screen="2" hidden>
+    <div class="flow-heading">
+      <span class="eyebrow"><span class="status-dot"></span> PASO 03 · EL ENCUENTRO</span>
+      <h1>Deja que la intuición<br />marque el <em>ritmo.</em></h1>
+      <p id="shuffle-instruction">Mantén tu pregunta en mente y mezcla el mazo.</p>
+    </div>
+    <div class="shuffle-table">
+      <div class="shuffle-deck" id="shuffle-deck" aria-hidden="true"><span>✳</span><span>✳</span><span>✳</span></div>
+      <div class="choice-row" id="choice-row" hidden></div>
+    </div>
+    <p class="selection-count" id="selection-count" aria-live="polite">Tres cartas esperan por ti.</p>
+    <p class="reading-error" id="reading-error" role="alert" hidden></p>
+    <div class="flow-actions">
+      <button class="text-button flow-back" type="button" data-go="1">← Volver</button>
+      <button class="button button-primary" id="shuffle-button" type="button"><span class="button-sparkle">✳</span> Mezclar las cartas</button>
+      <button class="button button-primary" id="reveal-button" type="button" hidden disabled>Ver mi lectura <span aria-hidden="true">↗</span></button>
+    </div>
+  </section>
+
+  <section class="flow-screen" data-screen="3" hidden>
+    <div class="flow-heading reading-heading">
+      <span class="eyebrow"><span class="status-dot"></span> PASO 04 · TU LECTURA <span id="reading-category"></span></span>
+      <h1 id="reading-title">Una carta a la vez.</h1>
+      <p id="reading-question-display" hidden></p>
+    </div>
+    <div class="interpretation-layout" id="interpretation-layout">
+      <button class="reading-arrow" id="previous-card" type="button" aria-label="Ver carta anterior">←</button>
+      <article class="interpretation-card" id="interpretation-card" tabindex="0" aria-label="Carta de tarot">
+        <div class="interpretation-card-face">
+          <span class="interpretation-index" id="interpretation-index">I</span>
+          <span class="interpretation-sparkle">✳</span>
+          <span class="interpretation-position" id="interpretation-position"></span>
+          <h2 id="interpretation-name"></h2>
+        </div>
+      </article>
+      <div class="interpretation-copy">
+        <span class="eyebrow" id="position-heading"></span>
+        <h2 id="meaning-title"></h2>
+        <div class="keyword-list" id="keyword-list"></div>
+        <p id="interpretation-text"></p>
+        <p class="category-focus" id="category-focus"></p>
+        <p class="swipe-hint">DESLIZA O USA LAS FLECHAS PARA EXPLORAR</p>
+      </div>
+      <button class="reading-arrow" id="next-card" type="button" aria-label="Ver carta siguiente">→</button>
+    </div>
+    <div class="reading-progress" id="reading-progress" aria-label="Carta actual"></div>
+    <div class="flow-actions reading-actions">
+      <button class="text-button flow-back" type="button" data-go="2">← Ver las cartas</button>
+      <button class="button button-primary" id="reading-next" type="button">Siguiente carta <span aria-hidden="true">→</span></button>
+      <button class="button button-primary" id="reading-finish" type="button" hidden>Reflexionar sobre mi lectura <span aria-hidden="true">↗</span></button>
+    </div>
+  </section>
+
+  <section class="flow-screen" data-screen="4" hidden>
+    <div class="closing-scene">
+      <span class="eyebrow"><span class="status-dot"></span> PASO 05 · INTEGRAR</span>
+      <span class="closing-star">✳</span>
+      <h1>Las cartas muestran tendencias,<br />pero tú tienes el poder de<br /><em>moldear tu destino.</em></h1>
+      <p>¿Qué acción tomarás hoy?</p>
+      <div class="closing-summary" id="closing-summary"></div>
+      <div class="closing-actions">
+        <button class="button button-primary" id="save-reading" type="button">Guardar en mi diario <span aria-hidden="true">↗</span></button>
+        <button class="button button-secondary" id="download-reading" type="button">Descargar mis cartas <span aria-hidden="true">↓</span></button>
+      </div>
+      <p class="action-feedback" id="action-feedback" role="status" aria-live="polite"></p>
+      <button class="text-button finish-session" id="finish-session" type="button">Terminar sesión</button>
+    </div>
+  </section>
+
+  <footer class="app-footer"><span>FIRE GLASS</span><span>LA INTUICIÓN ES UNA FORMA DE LUZ</span><span>✳</span></footer>
+</main>
+{% endblock %}

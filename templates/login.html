@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Entrar · Fire glass{% endblock %}
+{% block content %}
+<main class="login-layout">
+  <section class="login-scene" aria-label="Cueva de cristal">
+    <div class="scene-stars"></div>
+    <div class="crystal crystal-one"></div>
+    <div class="crystal crystal-two"></div>
+    <div class="crystal crystal-three"></div>
+    <div class="scene-copy">
+      <span class="eyebrow"><span class="status-dot"></span> UN ESPACIO PARA ESCUCHAR</span>
+      <h1>Encuentra luz<br />en lo <em>profundo.</em></h1>
+      <p>Entra en la quietud de la cueva.<br />Tu siguiente capítulo comienza aquí.</p>
+    </div>
+    <span class="scene-caption">EST. IN THE STILLNESS · 01</span>
+  </section>
+
+  <section class="login-panel">
+    <a class="wordmark" href="/" aria-label="Fire glass, inicio">
+      <span class="brand-mark">✳</span> fire glass
+    </a>
+    <div class="login-form-wrap">
+      <span class="eyebrow muted-eyebrow">BIENVENIDO A TU REFUGIO</span>
+      <h2>Vuelve a tu<br /><em>centro.</em></h2>
+      <p class="form-intro">Inicia sesión para descubrir lo que las cartas tienen para ti.</p>
+
+      {% if error == "credentials" %}
+      <div class="notice notice-error" role="alert">Usuario o contraseña incorrectos. Inténtalo de nuevo.</div>
+      {% elif error == "google_not_configured" %}
+      <div class="notice" role="status">Google OAuth aún no está configurado. Puedes entrar con la cuenta de demostración.</div>
+      {% endif %}
+
+      <form class="login-form" action="/auth/login" method="post">
+        <label for="username">USUARIO</label>
+        <input id="username" name="username" type="text" placeholder="Tu usuario" autocomplete="username" required />
+        <label for="password">CONTRASEÑA</label>
+        <input id="password" name="password" type="password" placeholder="Tu contraseña" autocomplete="current-password" required />
+        <button class="button button-primary" type="submit">Entrar en mi espacio <span aria-hidden="true">↗</span></button>
+      </form>
+
+      <div class="divider"><span></span><small>O CONTINÚA CON</small><span></span></div>
+      <a class="button button-google{% if not google_enabled %} button-disabled{% endif %}" href="/auth/google" aria-label="Continuar con Google">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94a11.05 11.05 0 0 1-4.8 7.24l7.73 6C44.38 38.05 47 31.95 47 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.2a23.93 23.93 0 0 0 0 21.58l7.98-6.2Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.17 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.2C6.51 42.62 14.62 48 24 48Z"/></svg>
+        Continuar con Google
+      </a>
+      {% if not google_enabled %}<p class="google-hint">Configura Google OAuth en tu archivo <code>.env</code>.</p>{% endif %}
+      <p class="demo-hint">Acceso de demostración: <strong>admin</strong> / <strong>admin</strong></p>
+    </div>
+    <p class="panel-footer">HECHO PARA LOS MOMENTOS DE QUIETUD <span>✳</span></p>
+  </section>
+</main>
+{% endblock %}

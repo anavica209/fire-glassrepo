@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07111d" />
+    <title>{% block title %}Fire glass{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="cave-glow cave-glow-amber"></div>
+    <div class="cave-glow cave-glow-blue"></div>
+    {% block content %}{% endblock %}
+  </body>
+</html>
