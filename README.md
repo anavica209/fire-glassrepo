@@ -62,3 +62,9 @@ The `admin` / `admin` credentials are intentionally for local demonstration only
 ## Admin analytics
 
 The demo `admin` account sees an Analytics link in the top navigation. It shows each user's accumulated visible time in the first four reading sections (welcome, focus, card draw, and interpretation). A FastAPI middleware records each section transition in `data/fire_glass_analytics.db`; tracking pauses when the tab is hidden or the page is left. User names are shown to the admin, while account emails are represented by a keyed HMAC so they are not stored in plain text. This local SQLite file is excluded from version control.
+
+## Docker userful commands:
+
+docker rm -f fire-glass-app
+docker build -t fire-glass .
+docker run -d -p 8000:8000 --env-file .env --name fire-glass-app fire-glass
