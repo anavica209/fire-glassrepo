@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app_constants import (
+from app.core.constants import (
     DEMO_DISPLAY_NAME,
     DEMO_EMAIL,
     DEMO_PASSWORD,
@@ -20,9 +20,9 @@ from app_constants import (
     FIELD_USERNAME,
     SAMPLE_ANALYTICS_USERNAME,
 )
-import main
-import routers.analytics as analytics
-from core import active_section_sessions
+import app.main as main
+import app.api.analytics as analytics
+from app.domain.core import active_section_sessions
 
 
 @pytest.fixture(name="client")

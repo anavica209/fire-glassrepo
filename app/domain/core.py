@@ -1,22 +1,25 @@
-import logging
-import os
-import secrets
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Annotated, TypedDict
 from uuid import UUID
 
 import jwt
 from authlib.integrations.starlette_client import OAuth
-from dotenv import load_dotenv
 from fastapi import HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, model_validator
 
-from app_constants import (
+from app.core.config import (
+    ANALYTICS_DB_PATH,
+    APP_DIR,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    JWT_SECRET,
+    SESSION_SECRET,
+)
+from app.core.constants import (
     ADMIN_ROLE,
     DEMO_EMAIL,
     FIELD_CATEGORY,
@@ -29,36 +32,23 @@ from app_constants import (
     FIELD_SESSION_ID,
     FIELD_SUBJECT,
     FIELD_USER,
+    POSITIONS,
 )
-from cards import ReadingCard
-from categories import CategoryKey
-from constants import POSITIONS
+from app.domain.cards import ReadingCard
+from app.domain.categories import CategoryKey
 
-logger = logging.getLogger(__name__)
-BASE_DIR = Path(__file__).resolve().parent
-ANALYTICS_DB_PATH = BASE_DIR / "fire_glass_analytics.db"
-load_dotenv(BASE_DIR / ".env")
-SESSION_SECRET = os.getenv("SESSION_SECRET", "change-this-development-secret")
-JWT_SECRET = os.getenv("JWT_SECRET") or secrets.token_urlsafe(32)
-if not os.getenv("JWT_SECRET"):
-    logger.warning(
-        "JWT_SECRET is unset; using a temporary process-local signing secret. "
-        "Set JWT_SECRET to a stable random value for deployments."
-    )
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = 30
 
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = Jinja2Templates(directory=APP_DIR / "templates")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 oauth = OAuth()
-google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-if google_client_id and google_client_secret:
+if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
     oauth.register(
         name="google",
-        client_id=google_client_id,
-        client_secret=google_client_secret,
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
         client_kwargs={"scope": "openid email profile"},
     )

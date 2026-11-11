@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, Response
 
-from app_constants import (
+from app.core.constants import (
     FIELD_CARDS,
     FIELD_CATEGORY,
     FIELD_CATEGORY_FOCUS,
@@ -20,10 +20,10 @@ from app_constants import (
     FIELD_POSITION_LABEL,
     FIELD_QUESTION,
 )
-from cards import CARDS, MAJOR_ARCANA, ReadingCard
-from categories import CATEGORIES, CategoryKey
-from constants import POSITION_LABELS, POSITIONS
-from core import (
+from app.domain.cards import CARDS, MAJOR_ARCANA, ReadingCard
+from app.domain.categories import CATEGORIES, CategoryKey
+from app.core.constants import POSITION_LABELS, POSITIONS
+from app.domain.core import (
     DownloadReadingRequest,
     ReadingRequest,
     require_user,

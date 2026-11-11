@@ -570,4 +570,131 @@ document.querySelector("#finish-session").addEventListener("click", () => {
   showScreen(0);
 });
 
+const chatToggle = document.querySelector("#tarot-chat-toggle");
+const chatDrawer = document.querySelector("#tarot-chat-drawer");
+const chatClose = document.querySelector("#tarot-chat-close");
+const chatForm = document.querySelector("#tarot-chat-form");
+const chatInput = document.querySelector("#tarot-chat-input");
+const chatSend = document.querySelector("#tarot-chat-send");
+const chatMessages = document.querySelector("#tarot-chat-messages");
+const chatPrompts = document.querySelector("#tarot-chat-prompts");
+const chatStatus = document.querySelector("#tarot-chat-status");
+const chatHistory = [];
+let chatBusy = false;
+
+function appendChatMessage(role, content, extraClass = "") {
+  const message = document.createElement("article");
+  message.className = `chat-message chat-message-${role}${extraClass ? ` ${extraClass}` : ""}`;
+  const name = document.createElement("span");
+  name.className = "chat-message-name";
+  name.textContent = role === "user" ? "TÚ" : "GUÍA DE TAROT";
+  const text = document.createElement("p");
+  text.textContent = content;
+  message.append(name, text);
+  chatMessages.append(message);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return message;
+}
+
+function setChatOpen(open) {
+  chatDrawer.classList.toggle("is-open", open);
+  chatToggle.classList.toggle("is-open", open);
+  chatToggle.setAttribute("aria-expanded", String(open));
+  chatToggle.setAttribute(
+    "aria-label",
+    open ? "Guía de tarot abierta" : "Abrir guía de tarot",
+  );
+  chatDrawer.setAttribute("aria-hidden", String(!open));
+  chatDrawer.inert = !open;
+  if (open) chatInput.focus();
+  else chatToggle.focus();
+}
+
+chatToggle.addEventListener("click", () => {
+  setChatOpen(!chatDrawer.classList.contains("is-open"));
+});
+chatClose.addEventListener("click", () => setChatOpen(false));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && chatDrawer.classList.contains("is-open")) {
+    setChatOpen(false);
+  }
+});
+
+async function sendChatMessage(rawMessage) {
+  const content = rawMessage.trim();
+  if (!content || chatBusy) return;
+
+  chatBusy = true;
+  chatStatus.textContent = "";
+  chatPrompts.hidden = true;
+  appendChatMessage("user", content);
+  chatHistory.push({ role: "user", content });
+  const pendingMessage = appendChatMessage(
+    "assistant",
+    "Estoy consultando la guía…",
+    "chat-message-pending",
+  );
+  chatInput.value = "";
+  chatInput.style.height = "auto";
+  chatInput.disabled = true;
+  chatSend.disabled = true;
+
+  try {
+    const response = await authenticatedFetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: chatHistory.slice(-12) }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        typeof result.detail === "string"
+          ? result.detail
+          : "No se pudo enviar tu pregunta. Inténtalo de nuevo.",
+      );
+    }
+    if (typeof result.reply !== "string" || !result.reply.trim()) {
+      throw new Error("El chat no devolvió una respuesta válida.");
+    }
+
+    pendingMessage.remove();
+    chatHistory.push({ role: "assistant", content: result.reply });
+    appendChatMessage("assistant", result.reply);
+  } catch (error) {
+    pendingMessage.remove();
+    if (chatHistory[chatHistory.length - 1]?.role === "user") chatHistory.pop();
+    chatStatus.textContent =
+      error instanceof TypeError
+        ? "No pudimos conectar con Fire glass. Comprueba que el servidor siga activo."
+        : error instanceof Error
+          ? error.message
+          : "No se pudo enviar tu pregunta.";
+  } finally {
+    chatBusy = false;
+    chatInput.disabled = false;
+    chatSend.disabled = false;
+    if (chatDrawer.classList.contains("is-open")) chatInput.focus();
+  }
+}
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendChatMessage(chatInput.value);
+});
+chatInput.addEventListener("input", () => {
+  chatInput.style.height = "auto";
+  chatInput.style.height = `${Math.min(chatInput.scrollHeight, 120)}px`;
+});
+chatInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
+chatPrompts.querySelectorAll("[data-chat-prompt]").forEach((prompt) => {
+  prompt.addEventListener("click", () => {
+    sendChatMessage(prompt.dataset.chatPrompt);
+  });
+});
+
 showScreen(0);

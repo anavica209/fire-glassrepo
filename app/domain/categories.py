@@ -3,13 +3,13 @@
 from enum import Enum
 from typing import NamedTuple
 
-from app_constants import (
+from app.core.constants import (
     CATEGORY_GENERAL,
     CATEGORY_GROWTH,
     CATEGORY_LOVE,
     CATEGORY_WORK,
 )
-from constants import CATEGORY_TEXT
+from app.core.constants import CATEGORY_TEXT
 
 
 class CategoryKey(str, Enum):

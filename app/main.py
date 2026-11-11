@@ -1,11 +1,11 @@
-import os
 import time
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app_constants import (
+from app.core.config import APP_DIR, COOKIE_SECURE, SESSION_SECRET
+from app.core.constants import (
     FIELD_SECTION,
     FIELD_SECTION_TRACKING,
     FIELD_SESSION_ID,
@@ -13,25 +13,24 @@ from app_constants import (
     FIELD_USER_KEY,
     FIELD_USERNAME,
 )
-from core import (
-    BASE_DIR,
-    SESSION_SECRET,
+from app.domain.core import (
     active_section_sessions,
     save_section_duration,
 )
-from routers.analytics import router as analytics_router
-from routers.auth import router as auth_router
-from routers.pages import router as pages_router
-from routers.readings import router as readings_router
+from app.api.analytics import router as analytics_router
+from app.api.auth import router as auth_router
+from app.api.chat import router as chat_router
+from app.api.pages import router as pages_router
+from app.api.readings import router as readings_router
 
 app = FastAPI(title="Fire glass")
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
     same_site="lax",
-    https_only=os.getenv("COOKIE_SECURE", "false").lower() == "true",
+    https_only=COOKIE_SECURE,
 )
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
 
 @app.middleware("http")
@@ -67,5 +66,6 @@ async def record_section_time(request: Request, call_next):
 
 app.include_router(pages_router)
 app.include_router(auth_router)
+app.include_router(chat_router)
 app.include_router(analytics_router)
 app.include_router(readings_router)

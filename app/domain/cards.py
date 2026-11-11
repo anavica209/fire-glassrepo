@@ -5,14 +5,14 @@ from typing import NamedTuple
 
 from pydantic import BaseModel, Field, model_validator
 
-from app_constants import (
+from app.core.constants import (
     FIELD_NAME,
     FIELD_POSITION,
     POSITION_FUTURE,
     POSITION_PAST,
     POSITION_PRESENT,
 )
-from constants import CARD_TEXT
+from app.core.constants import CARD_TEXT
 
 
 class CardPosition(str, Enum):

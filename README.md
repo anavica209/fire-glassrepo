@@ -2,7 +2,7 @@
 
 Fire glass is a standalone FastAPI tarot web app. It has a demo admin login, optional Google OAuth, and a guided five-screen session: take a breath, choose a topic, shuffle and pick three cards, explore their interpretations, and close or save the reading. Saved readings are stored in the browser's local diary on that device.
 
-HTTP endpoints are grouped into `APIRouter` modules under `routers/` by page, authentication, analytics, and reading domain. `main.py` configures the app and includes those routers; `core.py` holds shared models, dependencies, and services.
+Application code lives under `app/`: `api/` contains the HTTP routers, `core/` contains configuration and shared constants, `domain/` contains tarot models and shared application logic, and `services/` contains the chatbot and PDF retrieval code. Templates and static assets are stored alongside the app. The tarot guide lives in `data/raw/`, and local analytics are stored in the ignored `data/fire_glass_analytics.db`.
 
 ## Run locally
 
@@ -18,12 +18,16 @@ Create an isolated environment, install the dependencies, and start the server:
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
-.\.venv\Scripts\python.exe -m uvicorn main:app --reload
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 Using the environment's Python to launch Uvicorn avoids relying on a globally installed `uvicorn` command or activating the environment in PowerShell.
 
 Open [http://localhost:8000](http://localhost:8000). Demo credentials: `admin` / `admin`.
+
+## Tarot chat
+
+The expandable chat drawer on the reading page explains tarot basics and the past, present, and future positions using `data/raw/guia_completa_tarot-v2.pdf` as reference. To enable responses, set `GROQ_API_KEY` in `.env`; without it, the drawer remains available and explains how to configure the service.
 
 ## Tests
 
@@ -56,4 +60,4 @@ The `admin` / `admin` credentials are intentionally for local demonstration only
 
 ## Admin analytics
 
-The demo `admin` account sees an Analytics link in the top navigation. It shows each user's accumulated visible time in the first four reading sections (welcome, focus, card draw, and interpretation). A FastAPI middleware records each section transition in `fire_glass_analytics.db`; tracking pauses when the tab is hidden or the page is left. User names are shown to the admin, while account emails are represented by a keyed HMAC so they are not stored in plain text. This local SQLite file is excluded from version control.
+The demo `admin` account sees an Analytics link in the top navigation. It shows each user's accumulated visible time in the first four reading sections (welcome, focus, card draw, and interpretation). A FastAPI middleware records each section transition in `data/fire_glass_analytics.db`; tracking pauses when the tab is hidden or the page is left. User names are shown to the admin, while account emails are represented by a keyed HMAC so they are not stored in plain text. This local SQLite file is excluded from version control.

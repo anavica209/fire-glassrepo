@@ -6,7 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import HTMLResponse
 
-from app_constants import (
+from app.core.config import ANALYTICS_DB_PATH, SESSION_SECRET
+from app.core.constants import (
     FIELD_EMAIL,
     FIELD_ADMIN,
     FIELD_DURATIONS,
@@ -21,9 +22,7 @@ from app_constants import (
     FIELD_USERNAME,
     FIELD_USER_KEY,
 )
-from core import (
-    ANALYTICS_DB_PATH,
-    SESSION_SECRET,
+from app.domain.core import (
     SectionTrackingRequest,
     initialize_analytics_store,
     require_admin_session,

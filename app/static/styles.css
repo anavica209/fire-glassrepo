@@ -357,6 +357,44 @@ a { color: inherit; text-decoration: none; }
   .diary-card-entry h3 { font-size: 14px; }
   .diary-interpretation { font-size: 10px; }
 }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.chat-toggle { position: fixed; z-index: 13; right: 24px; bottom: 22px; display: inline-flex; min-height: 48px; align-items: center; gap: 9px; border: 1px solid rgba(225,169,94,.55); border-radius: 99px; padding: 0 17px; background: linear-gradient(110deg, #d6a25f, #bd8140); color: #111820; box-shadow: 0 9px 28px rgba(0,0,0,.34); font-size: 11px; font-weight: 600; cursor: pointer; transition: transform .2s, opacity .2s; }
+.chat-toggle:hover { transform: translateY(-2px); }
+.chat-toggle > span:first-child { font-size: 16px; }
+.chat-toggle.is-open { opacity: 0; pointer-events: none; }
+.tarot-chat-drawer { position: fixed; z-index: 12; inset: 0 0 0 auto; display: flex; width: min(410px, 100vw); flex-direction: column; border-left: 1px solid rgba(192,206,220,.17); padding: 25px 22px 18px; background: radial-gradient(ellipse at 75% 4%, rgba(35,83,112,.18), transparent 38%), linear-gradient(155deg, #102031, #08131f 72%); color: #e8e8ed; box-shadow: -20px 0 70px rgba(0,0,0,.42); transform: translateX(102%); visibility: hidden; pointer-events: none; transition: transform .28s ease, visibility .28s; }
+.tarot-chat-drawer.is-open { transform: translateX(0); visibility: visible; pointer-events: auto; }
+.tarot-chat-header { display: flex; flex: 0 0 auto; align-items: flex-start; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.tarot-chat-header h2 { margin: 11px 0 6px; font: 22px "Playfair Display", Georgia, serif; }
+.tarot-chat-header h2 em { color: var(--amber-bright); font-weight: 400; }
+.tarot-chat-header p { margin: 0; color: #8997a3; font-size: 10px; line-height: 1.7; }
+.chat-close { flex: 0 0 auto; }
+.tarot-chat-messages { display: flex; flex: 1 1 auto; flex-direction: column; gap: 13px; overflow-y: auto; overscroll-behavior: contain; padding: 20px 2px 14px; scrollbar-color: rgba(192,206,220,.2) transparent; scrollbar-width: thin; }
+.chat-message { max-width: 91%; border: 1px solid rgba(192,206,220,.12); border-radius: 5px 13px 13px 13px; padding: 11px 13px; background: rgba(255,255,255,.035); animation: screen-arrive .25s both; }
+.chat-message-user { align-self: flex-end; border-color: rgba(225,169,94,.24); border-radius: 13px 5px 13px 13px; background: rgba(225,169,94,.09); }
+.chat-message-name { color: #d3b98e; font-size: 7px; letter-spacing: .15em; }
+.chat-message p { margin: 7px 0 0; color: #c1c9ce; font-size: 11px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-message-user .chat-message-name { color: var(--amber-bright); }
+.chat-message-pending p { color: #8d99a9; font-style: italic; }
+.chat-message-error { border-color: rgba(221,130,117,.28); }
+.chat-message-error p { color: #e2aaa2; }
+.tarot-chat-prompts { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 7px; padding: 2px 0 11px; }
+.tarot-chat-prompts button { border: 1px solid rgba(139,187,208,.2); border-radius: 99px; padding: 7px 9px; background: rgba(139,187,208,.045); color: #b6c8d0; font-size: 8px; line-height: 1.35; text-align: left; cursor: pointer; transition: border-color .2s, color .2s; }
+.tarot-chat-prompts button:hover { border-color: rgba(225,169,94,.5); color: var(--amber-bright); }
+.chat-status { min-height: 15px; margin: 0 0 7px; color: #e2aaa2; font-size: 9px; line-height: 1.6; }
+.tarot-chat-form { display: flex; flex: 0 0 auto; align-items: flex-end; gap: 9px; border: 1px solid rgba(194,210,223,.15); border-radius: 5px; padding: 7px; background: rgba(255,255,255,.025); transition: border-color .2s; }
+.tarot-chat-form:focus-within { border-color: rgba(225,169,94,.58); }
+.tarot-chat-form textarea { width: 100%; max-height: 120px; resize: none; border: 0; outline: 0; padding: 7px; background: transparent; color: #e8e8ed; font: 11px/1.6 "DM Sans", sans-serif; }
+.tarot-chat-form textarea::placeholder { color: #64727e; }
+.chat-send { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(225,169,94,.42); border-radius: 4px; background: rgba(225,169,94,.12); color: var(--amber-bright); font-size: 16px; cursor: pointer; }
+.chat-send:hover:not(:disabled) { background: rgba(225,169,94,.22); }
+.chat-send:disabled { opacity: .5; cursor: wait; }
+.tarot-chat-note { margin: 10px 0 0; color: #697783; font-size: 8px; line-height: 1.5; text-align: center; }
+@media (max-width: 520px) {
+  .chat-toggle { right: 15px; bottom: 15px; }
+  .tarot-chat-drawer { padding: 19px 16px 14px; }
+  .tarot-chat-header h2 { font-size: 20px; }
+}
 .analytics-content { flex: 1; padding: clamp(42px, 8vh, 85px) 0 50px; }
 .analytics-content > h1 { margin: 18px 0 12px; font: 400 clamp(38px, 5vw, 58px)/1.12 "Playfair Display", Georgia, serif; }
 .analytics-content > h1 em { color: var(--amber-bright); font-weight: 400; }

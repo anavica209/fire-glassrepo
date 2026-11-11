@@ -3,3 +3,4 @@
 __pycache__/
 *.py[cod]
 fire_glass_analytics.db
+data/fire_glass_analytics.db

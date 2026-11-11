@@ -1,4 +1,3 @@
-import os
 import secrets
 from typing import Annotated
 
@@ -6,7 +5,12 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestFormStrict
 
-from app_constants import (
+from app.core.config import (
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI,
+)
+from app.core.constants import (
     ADMIN_ROLE,
     DEMO_DISPLAY_NAME,
     DEMO_EMAIL,
@@ -21,10 +25,8 @@ from app_constants import (
     FIELD_USER,
     FIELD_USERNAME,
 )
-from core import (
+from app.domain.core import (
     create_access_token,
-    google_client_id,
-    google_client_secret,
     oauth,
     require_session_user,
     signed_in_user,
@@ -42,7 +44,7 @@ async def login_page(request: Request):
         request=request,
         name="login.html",
         context={
-            "google_enabled": bool(google_client_id and google_client_secret),
+            "google_enabled": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
             "error": request.query_params.get("error"),
             "field_username": FIELD_USERNAME,
             "field_password": FIELD_PASSWORD,
@@ -103,18 +105,15 @@ async def issue_session_token(
 
 @router.get("/auth/google")
 async def google_login(request: Request):
-    if not (google_client_id and google_client_secret):
+    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
-    redirect_uri = os.getenv(
-        "GOOGLE_REDIRECT_URI",
-        str(request.url_for("google_callback")),
-    )
+    redirect_uri = GOOGLE_REDIRECT_URI or str(request.url_for("google_callback"))
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/auth/google/callback")
 async def google_callback(request: Request):
-    if not (google_client_id and google_client_secret):
+    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
     token = await oauth.google.authorize_access_token(request)
     userinfo = token.get("userinfo")

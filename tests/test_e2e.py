@@ -8,7 +8,7 @@ from zipfile import ZipFile
 
 from fastapi.testclient import TestClient
 
-from app_constants import (
+from app.core.constants import (
     API_FIELDS,
     CATEGORY_LOVE,
     DEMO_PASSWORD,
@@ -23,7 +23,7 @@ from app_constants import (
     FIELD_USERNAME,
     SAMPLE_QUESTION,
 )
-from main import app
+from app.main import app
 
 
 def test_user_completes_a_reading_and_downloads_the_cards():

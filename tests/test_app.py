@@ -4,9 +4,10 @@ from zipfile import ZipFile
 import pytest
 from fastapi.testclient import TestClient
 
-from app_constants import (
+from app.core.constants import (
     CATEGORY_GENERAL,
     CATEGORY_LOVE,
+    CATEGORY_TEXT,
     DEMO_PASSWORD,
     DEMO_USERNAME,
     FIELD_ACCESS_TOKEN,
@@ -26,11 +27,11 @@ from app_constants import (
     INVALID_CATEGORY,
     INVALID_PASSWORD,
     POSITION_PRESENT,
+    POSITIONS,
     SAMPLE_CARDS,
     SAMPLE_QUESTION,
 )
-from constants import POSITIONS, CATEGORY_TEXT
-from main import app
+from app.main import app
 
 
 @pytest.fixture

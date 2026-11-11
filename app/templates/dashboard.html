@@ -25,6 +25,65 @@
     <div class="diary-list" id="diary-list"></div>
   </dialog>
 
+  <button
+    class="chat-toggle"
+    id="tarot-chat-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="tarot-chat-drawer"
+    aria-label="Abrir guía de tarot"
+  >
+    <span aria-hidden="true">✳</span><span class="chat-toggle-label">Guía de tarot</span>
+  </button>
+  <aside
+    class="tarot-chat-drawer"
+    id="tarot-chat-drawer"
+    aria-labelledby="tarot-chat-title"
+    aria-hidden="true"
+    inert
+  >
+    <header class="tarot-chat-header">
+      <div>
+        <span class="eyebrow"><span class="status-dot"></span> TU GUÍA DE TAROT</span>
+        <h2 id="tarot-chat-title">Un espacio para <em>preguntar.</em></h2>
+        <p>Aprende a escuchar los símbolos, a tu ritmo.</p>
+      </div>
+      <button
+        class="diary-close-button chat-close"
+        id="tarot-chat-close"
+        type="button"
+        aria-label="Cerrar guía de tarot"
+      >×</button>
+    </header>
+    <div class="tarot-chat-messages" id="tarot-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+      <article class="chat-message chat-message-assistant">
+        <span class="chat-message-name">GUÍA DE TAROT</span>
+        <p>Hola. Puedo explicarte los arcanos, cómo hacer una pregunta abierta o qué aportan las posiciones de pasado, presente y futuro. ¿Por dónde te gustaría empezar?</p>
+      </article>
+    </div>
+    <div class="tarot-chat-prompts" id="tarot-chat-prompts" aria-label="Preguntas sugeridas">
+      <button type="button" data-chat-prompt="¿Qué significan las posiciones de pasado, presente y futuro?">Pasado, presente y futuro</button>
+      <button type="button" data-chat-prompt="¿Cómo puedo empezar a leer el tarot?">Empezar con el tarot</button>
+      <button type="button" data-chat-prompt="¿Qué diferencia hay entre los arcanos mayores y menores?">Arcanos mayores y menores</button>
+    </div>
+    <p class="chat-status" id="tarot-chat-status" role="status" aria-live="polite"></p>
+    <form class="tarot-chat-form" id="tarot-chat-form">
+      <label class="sr-only" for="tarot-chat-input">Escribe tu pregunta sobre tarot</label>
+      <textarea
+        id="tarot-chat-input"
+        name="message"
+        rows="2"
+        maxlength="1200"
+        placeholder="Escribe tu pregunta…"
+        required
+      ></textarea>
+      <button class="chat-send" id="tarot-chat-send" type="submit" aria-label="Enviar mensaje">
+        <span aria-hidden="true">↗</span>
+      </button>
+    </form>
+    <p class="tarot-chat-note">Una herramienta de reflexión; tu camino siempre te pertenece.</p>
+  </aside>
+
   <nav class="stepper" aria-label="Progreso de la lectura">
     <span class="step-dot is-current" data-step-dot="0">01</span><i></i>
     <span class="step-dot" data-step-dot="1">02</span><i></i>
