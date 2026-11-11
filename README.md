@@ -22,6 +22,7 @@ if (!(Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 Using the environment's Python to launch Uvicorn avoids relying on a globally installed `uvicorn` command or activating the environment in PowerShell.
+From the project root, `app.main:app` is the canonical import path. The root-level `main.py` also keeps the older `main:app` command working.
 
 Open [http://localhost:8000](http://localhost:8000). Demo credentials: `admin` / `admin`.
 

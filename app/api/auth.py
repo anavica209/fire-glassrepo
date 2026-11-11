@@ -107,9 +107,15 @@ async def issue_session_token(
 async def google_login(request: Request):
     if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
-    redirect_uri = GOOGLE_REDIRECT_URI or str(request.url_for("google_callback"))
+    
+    if GOOGLE_REDIRECT_URI:
+        redirect_uri = GOOGLE_REDIRECT_URI
+    else:
+        redirect_uri = str(request.url_for("google_callback"))
+        if "localhost" not in redirect_uri and "127.0.0.1" not in redirect_uri:
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
+            
     return await oauth.google.authorize_redirect(request, redirect_uri)
-
 
 @router.get("/auth/google/callback")
 async def google_callback(request: Request):

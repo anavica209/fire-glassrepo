@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Tu lectura · Fire glass{% endblock %}
-{% block head %}<script src="{{ url_for('static', path='/app.js') }}" defer></script>{% endblock %}
+{% block head %}<script src="/static/app.js" defer></script>{% endblock %}
 {% block content %}
 <main class="app-layout session-layout" data-user-id="{{ user.email }}" data-default-category="{{ default_category }}" data-api-fields="{{ api_fields | tojson | forceescape }}">
   <header class="topbar">
