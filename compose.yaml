@@ -7,7 +7,13 @@ services:
     #env_file: #commenting this section and its values to use dokloy
       # Inject environment variables at runtime
       #- .env 
+    networks:
+      - dokploy-network
     volumes:
       # Persist SQLite database and raw files outside the container
       - ./data:/code/data
     restart: unless-stopped
+    
+networks:
+  dokploy-network:
+    external: true
