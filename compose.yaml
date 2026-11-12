@@ -2,11 +2,11 @@ services:
   fire-glass:
     build: .
     container_name: fire-glass-app
-    ports:
-      - "8000:8000"
-    env_file:
+    #ports: #commenting this section and its values to use dokloy
+      #- "8000:8000"
+    #env_file: #commenting this section and its values to use dokloy
       # Inject environment variables at runtime
-      - .env
+      #- .env 
     volumes:
       # Persist SQLite database and raw files outside the container
       - ./data:/code/data
