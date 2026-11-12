@@ -69,3 +69,16 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(analytics_router)
 app.include_router(readings_router)
+
+
+    # required for docker config when using postgres 
+    # def get_db_password():
+    # secret_path = os.getenv("DB_PASSWORD_FILE")
+    # if secret_path and os.path.exists(secret_path):
+    #     with open(secret_path, "r") as f:
+    #         return f.read().strip()
+    # return os.getenv("DB_PASSWORD", "") 
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "env": os.getenv("APP_ENV")}

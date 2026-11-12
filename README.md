@@ -65,6 +65,42 @@ The demo `admin` account sees an Analytics link in the top navigation. It shows 
 
 ## Docker userful commands:
 
-docker rm -f fire-glass-app
-docker build -t fire-glass .
-docker run -d -p 8000:8000 --env-file .env --name fire-glass-app fire-glass
+In Github, over the repository -> code -> codespaces new and in the terminal execute the following commands. In tab ports is left the link to the web in the container.
+Need to modify app\main.py to support postgres appuser credentials.
+
+This project uses **Docker** and **Docker Compose** to run the FastAPI application in a lightweight, isolated environment while persisting the local SQLite database (`data/`) across container rebuilds.
+
+### Prerequisites
+* [Docker](https://docker.com) and Docker Compose installed.
+* A `.env` file in the root directory (you can copy `.env.example` as a starting point) containing your API keys:
+  ```env
+  GROQ_API_KEY=your_groq_api_key_here
+  ```
+
+### Quick Start
+
+1. **Build and start the container in detached mode:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **Check container status and healthcheck:**
+   ```bash
+   docker compose ps
+   ```
+   Once ready, the app will be available at **`http://localhost:8000`**.
+
+### Useful Commands
+
+* **View real-time logs:**
+  ```bash
+  docker compose logs -f
+  ```
+* **Rebuild after code changes:**
+  ```bash
+  docker compose up -d --build
+  ```
+* **Stop the application (keeps `data/` intact):**
+  ```bash
+  docker compose down
+  ```
