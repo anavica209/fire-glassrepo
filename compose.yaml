@@ -1,13 +1,22 @@
 services:
   fire-glass:
     build: .
-    container_name: fire-glass-app
-    #ports:
-    #  - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_DB_PASS=${POSTGRES_DB_PASS}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECURE=${COOKIE_SECURE:-true}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     networks:
       - dokploy-network
     volumes:
-      # Keep the tarot source files and legacy SQLite file available for import.
       - ./data:/code/data
     restart: unless-stopped
 
