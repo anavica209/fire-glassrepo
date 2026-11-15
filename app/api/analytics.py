@@ -1,12 +1,11 @@
 import hmac
-import sqlite3
-from contextlib import closing
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import HTMLResponse
+from sqlalchemy import Numeric, case, cast, func, select
 
-from app.core.config import ANALYTICS_DB_PATH, SESSION_SECRET
+from app.core.config import SESSION_SECRET
 from app.core.constants import (
     FIELD_EMAIL,
     FIELD_ADMIN,
@@ -22,9 +21,9 @@ from app.core.constants import (
     FIELD_USERNAME,
     FIELD_USER_KEY,
 )
+from app.core.database import engine, section_time_events
 from app.domain.core import (
     SectionTrackingRequest,
-    initialize_analytics_store,
     require_admin_session,
     require_session_user,
     templates,
@@ -33,25 +32,38 @@ from app.domain.core import (
 router = APIRouter()
 
 
-def _load_analytics_records():
-    initialize_analytics_store()
-    with closing(sqlite3.connect(ANALYTICS_DB_PATH, timeout=5)) as connection:
-        connection.row_factory = sqlite3.Row
-        return connection.execute(
-            """
-            SELECT
-                user_key,
-                MAX(username) AS username,
-                ROUND(SUM(CASE WHEN section = 1 THEN duration_seconds ELSE 0 END), 1) AS section_1,
-                ROUND(SUM(CASE WHEN section = 2 THEN duration_seconds ELSE 0 END), 1) AS section_2,
-                ROUND(SUM(CASE WHEN section = 3 THEN duration_seconds ELSE 0 END), 1) AS section_3,
-                ROUND(SUM(CASE WHEN section = 4 THEN duration_seconds ELSE 0 END), 1) AS section_4,
-                ROUND(SUM(CASE WHEN section = 5 THEN duration_seconds ELSE 0 END), 1) AS section_5
-            FROM section_time_events
-            GROUP BY user_key
-            ORDER BY username COLLATE NOCASE
-            """
-        ).fetchall()
+async def _load_analytics_records():
+    "Tracked times for the users in the different sections of the readings"
+    section_totals = [
+        func.round(
+            cast(
+                func.sum(
+                    case(
+                        (
+                            section_time_events.c.section == section,
+                            section_time_events.c.duration_seconds,
+                        ),
+                        else_=0.0,
+                    )
+                ),
+                Numeric,
+            ),
+            1,
+        ).label(f"section_{section}")
+        for section in range(1, 6)
+    ]
+    statement = (
+        select(
+            section_time_events.c.user_key,
+            func.max(section_time_events.c.username).label(FIELD_USERNAME),
+            *section_totals,
+        )
+        .group_by(section_time_events.c.user_key)
+        .order_by(func.lower(func.max(section_time_events.c.username)))
+    )
+    async with engine.connect() as connection:
+        result = await connection.execute(statement)
+        return result.mappings().all()
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -59,7 +71,8 @@ async def analytics_page(
     request: Request,
     _admin: Annotated[dict[str, str], Depends(require_admin_session)],
 ):
-    results = _load_analytics_records()
+    "Display the tracked times for the users in the table in the different sections of the readings"
+    results = await _load_analytics_records()
     rows = []
     for result in results:
         durations = [
@@ -104,6 +117,7 @@ async def track_section(
     tracking: SectionTrackingRequest,
     user: Annotated[dict[str, str], Depends(require_session_user)],
 ):
+    "Track how much time a user spent in a section"
     setattr(request.state, FIELD_SECTION_TRACKING, {
         FIELD_USER_KEY: hmac.new(
             SESSION_SECRET.encode("utf-8"),
@@ -115,4 +129,3 @@ async def track_section(
         FIELD_SECTION: tracking.section,
     })
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

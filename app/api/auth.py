@@ -1,3 +1,4 @@
+"""Login-authentication module"""
 import secrets
 from typing import Annotated
 
@@ -138,4 +139,3 @@ async def google_callback(request: Request):
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
-

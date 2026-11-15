@@ -15,7 +15,7 @@ class ChatMessage(BaseModel):
 
     @model_validator(mode="after")
     def validate_content(self):
-        if not self.content.strip():
+        if not self.content.strip():  # pylint: disable=no-member
             raise ValueError("El mensaje no puede estar vacío.")
         return self
 

@@ -1,5 +1,3 @@
-import sqlite3
-from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, TypedDict
 from uuid import UUID
@@ -10,15 +8,15 @@ from fastapi import HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, model_validator
+from sqlalchemy import insert
 
 from app.core.config import (
-    ANALYTICS_DB_PATH,
     APP_DIR,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     JWT_SECRET,
-    SESSION_SECRET,
 )
+from app.core.database import engine, section_time_events
 from app.core.constants import (
     ADMIN_ROLE,
     DEMO_EMAIL,
@@ -88,74 +86,22 @@ class ActiveSectionSession(TypedDict):
 active_section_sessions: dict[tuple[str, str], ActiveSectionSession] = {}
 
 
-def initialize_analytics_store() -> None:
-    with closing(sqlite3.connect(ANALYTICS_DB_PATH, timeout=5)) as connection:
-        with connection:
-            table = connection.execute(
-                "SELECT sql FROM sqlite_master "
-                "WHERE type = 'table' AND name = 'section_time_events'"
-            ).fetchone()
-            if table is None:
-                _create_section_time_events_table(connection, "section_time_events")
-            elif "BETWEEN1AND4" in "".join(table[0].upper().split()):
-                _create_section_time_events_table(
-                    connection, "section_time_events_v5"
-                )
-                connection.execute(
-                    """
-                    INSERT INTO section_time_events_v5
-                        (id, user_key, username, section, duration_seconds, recorded_at)
-                    SELECT id, user_key, username, section, duration_seconds, recorded_at
-                    FROM section_time_events
-                    """
-                )
-                connection.execute("DROP TABLE section_time_events")
-                connection.execute(
-                    "ALTER TABLE section_time_events_v5 "
-                    "RENAME TO section_time_events"
-                )
-
-
-def _create_section_time_events_table(
-    connection: sqlite3.Connection, table_name: str
-) -> None:
-    connection.execute(
-        f"""
-        CREATE TABLE {table_name} (
-            id INTEGER PRIMARY KEY,
-            user_key TEXT NOT NULL,
-            username TEXT NOT NULL,
-            section INTEGER NOT NULL CHECK (section BETWEEN 1 AND 5),
-            duration_seconds REAL NOT NULL,
-            recorded_at TEXT NOT NULL
-        )
-        """
-    )
-
-
-def save_section_duration(
+async def save_section_duration(
     user_key: str,
     username: str,
     section: int,
     duration_seconds: float,
 ) -> None:
-    initialize_analytics_store()
-    with closing(sqlite3.connect(ANALYTICS_DB_PATH, timeout=5)) as connection:
-        with connection:
-            connection.execute(
-                """
-                INSERT INTO section_time_events
-                    (user_key, username, section, duration_seconds, recorded_at)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    user_key,
-                    username,
-                    section,
-                    duration_seconds,
-                    datetime.now(timezone.utc).isoformat(),
-                ),
+    async with engine.begin() as connection:
+        await connection.execute(
+            insert(section_time_events).values(
+                user_key=user_key,
+                username=username,
+                section=section,
+                duration_seconds=duration_seconds,
+                recorded_at=datetime.now(timezone.utc),
             )
+        )
 
 
 def signed_in_user(request: Request) -> dict[str, str] | None:

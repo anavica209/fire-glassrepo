@@ -1,3 +1,4 @@
+"""HTML view routes and authenticated dashboard rendering."""
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -23,4 +24,3 @@ async def home(request: Request):
             "default_category": DEFAULT_CATEGORY,
         },
     )
-

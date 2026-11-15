@@ -3,7 +3,7 @@
 # pylint: disable=redefined-outer-name  # Pytest injects fixtures as test parameters.
 
 import re
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -49,7 +49,7 @@ def sign_in_as_admin(client):
 
 def mock_analytics_records(monkeypatch, records):
     """Provide report rows as ordinary Python objects."""
-    records_mock = MagicMock(return_value=records)
+    records_mock = AsyncMock(return_value=records)
     monkeypatch.setattr(analytics, "_load_analytics_records", records_mock)
     return records_mock
 
@@ -87,7 +87,7 @@ def test_flow_step_tracking_persists_duration_when_step_ends(
         record.section = section
         record.duration_seconds = duration_seconds
 
-    save_duration_mock = MagicMock(side_effect=save_duration)
+    save_duration_mock = AsyncMock(side_effect=save_duration)
     monkeypatch.setattr(main, "save_section_duration", save_duration_mock)
     sign_in_as_admin(client)
     session_id = str(uuid4())
@@ -105,7 +105,7 @@ def test_flow_step_tracking_persists_duration_when_step_ends(
 
     assert started.status_code == 204
     assert ended.status_code == 204
-    save_duration_mock.assert_called_once_with(
+    save_duration_mock.assert_awaited_once_with(
         record.user_key,
         record.username,
         record.section,
@@ -155,7 +155,7 @@ def test_analytics_page_shows_aggregated_times_to_admin(
         rf"<strong>{re.escape(formatted_duration)}</strong>",
         response.text,
     )
-    records_mock.assert_called_once_with()
+    records_mock.assert_awaited_once_with()
 
 
 def test_analytics_page_does_not_track_time_for_the_admin_page(client, monkeypatch):
@@ -167,7 +167,7 @@ def test_analytics_page_does_not_track_time_for_the_admin_page(client, monkeypat
 
     assert response.status_code == 200
     assert not active_section_sessions
-    records_mock.assert_called_once_with()
+    records_mock.assert_awaited_once_with()
 
 
 def test_analytics_page_requires_a_signed_in_user(client):
