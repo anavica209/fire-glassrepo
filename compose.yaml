@@ -4,45 +4,12 @@ services:
     container_name: fire-glass-app
     #ports:
     #  - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      POSTGRES_DB_HOST: postgres
-      POSTGRES_DB_NAME: fire_glass
-      POSTGRES_DB_PORT: 5432
-      POSTGRES_DB_USER: fire_glass
-      POSTGRES_DB_SSL: disable
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - dokploy-network
     volumes:
       # Keep the tarot source files and legacy SQLite file available for import.
       - ./data:/code/data
     restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: fire_glass
-      POSTGRES_USER: fire_glass
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASS:?Set POSTGRES_DB_PASS in .env}
-    ports:
-      - "127.0.0.1:${POSTGRES_DB_LOCAL_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fire_glass -d fire_glass"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - dokploy-network
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
 
 networks:
   dokploy-network:
