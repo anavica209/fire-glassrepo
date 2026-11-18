@@ -1,4 +1,4 @@
-"Base configurations like env variables."
+"""Base configurations like env variables."""
 import logging
 import os
 import secrets

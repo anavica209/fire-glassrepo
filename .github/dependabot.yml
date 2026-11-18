@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Check Python dependencies (requirements.txt and requirements-dev.txt) weekly
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Keep GitHub Actions versions up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

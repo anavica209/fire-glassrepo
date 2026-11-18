@@ -137,3 +137,12 @@ This project uses **Docker** and **Docker Compose** to run the FastAPI applicati
   ```bash
   docker compose down
   ```
+
+## CI/CD & Automation
+
+This repository uses **GitHub Actions** (`.github/workflows/ci.yml`) to automate testing, security checks, and deployment:
+
+- **Triggers:** Runs automatically on every `push` or `pull_request` to `main`, on a monthly schedule (`cron`), or manually via `workflow_dispatch` from the **Actions** tab.
+- **Quality & Security:** Checks code formatting with `black`, runs static security analysis with `bandit`, audits dependencies with `safety`, executes the `pytest` suite, and validates the `Dockerfile` build.
+- **Deployment:** On a successful `push` to `main`, triggers a webhook to automatically redeploy the updated container in **Dokploy**.
+- **Dependency Updates:** Configured with **Dependabot** (`.github/dependabot.yml`) to open weekly Pull Requests for Python and GitHub Actions updates.

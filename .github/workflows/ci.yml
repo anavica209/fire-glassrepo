@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # 5. Scheduled monthly run (1st day of every month at 00:00 UTC)
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # <-- Allow manual execution in GitHub
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies and audit tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install black bandit safety
+
+      # 2. Code formatting check (warnings only, will not block pipeline)
+      - name: Check formatting with Black
+        continue-on-error: true
+        run: |
+          black --check .
+
+      # 4. Security static analysis (Bandit) and dependency check (Safety)
+      - name: Run Bandit security scan
+        run: |
+          bandit -r app/ -ll
+
+      - name: Run Safety dependency check
+        continue-on-error: true
+        run: |
+          safety check -r requirements.txt
+
+      # Run pytest suite
+      - name: Run pytest
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          SESSION_SECRET: "test-secret-key"
+          JWT_SECRET: "test-jwt-secret"
+        run: |
+          pytest
+
+      # 3. Verify Docker image builds without errors
+      - name: Test Docker build
+        run: |
+          docker build -t fire-glass-test .
+
+  # 1. Trigger Dokploy deployment only if all previous steps succeed on push to main
+  deploy:
+    needs: quality-and-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Dokploy Webhook
+        run: |
+          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
